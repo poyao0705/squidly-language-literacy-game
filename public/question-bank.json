@@ -1,0 +1,37 @@
+{
+  "games": {
+    "word-building": {
+      "title": "Word Building",
+      "questions": [
+        {
+          "unit": 1,
+          "words": [
+            "at",
+            "sat",
+            "mat"
+          ]
+        },
+        {
+          "unit": 2,
+          "words": [
+            "an",
+            "pan",
+            "can"
+          ]
+        },
+        {
+          "unit": 3,
+          "words": [
+            "in",
+            "pin",
+            "tin"
+          ]
+        }
+      ]
+    },
+    "spelling": {
+      "title": "Spelling",
+      "questions": []
+    }
+  }
+}
