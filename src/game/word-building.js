@@ -85,9 +85,20 @@ function getSourceInfoValue(sourceInfo, key) {
   return value === null || value === undefined ? "" : String(value);
 }
 
-function formatUnit(value) {
+function normalizeUnitKey(value) {
   if (value === null || value === undefined || value === "") return "";
-  return typeof value === "number" ? `Unit ${value}` : String(value);
+
+  const text = String(value).trim();
+  const unitMatch = text.match(/^unit\s+(.+)$/i);
+  return (unitMatch ? unitMatch[1] : text).trim();
+}
+
+function formatUnit(value) {
+  const unitKey = normalizeUnitKey(value);
+  if (!unitKey) return "";
+
+  const text = String(value).trim();
+  return /^unit\s+/i.test(text) ? text : `Unit ${unitKey}`;
 }
 
 function getSourceTitle(sourceInfo) {
@@ -107,10 +118,13 @@ function normalizeQuestion(question, index, sourceInfo = {}) {
     ? String(question.id)
     : `word-${index + 1}-${word || "empty"}`;
 
+  const rawUnit = isObject && question.unit !== undefined ? question.unit : sourceInfo?.unit;
+
   return {
     id,
     title: isObject && question.title ? String(question.title) : getSourceTitle(sourceInfo),
-    unit: isObject && question.unit ? formatUnit(question.unit) : formatUnit(sourceInfo?.unit),
+    unit: formatUnit(rawUnit),
+    unitKey: normalizeUnitKey(rawUnit) || "all",
     prompt: isObject && question.prompt ? String(question.prompt) : "Build the word you hear.",
     word,
     answerParts,
@@ -128,16 +142,28 @@ export class WordBuildingGame {
   #questionState;
   #sourceInfo;
   #gameState;
+  #selectedUnitKey;
+  #canRender;
   #onGameStateChange;
+  #onGoHome;
 
-  constructor(rootElement, { gameState = null, onGameStateChange = null } = {}) {
+  constructor(rootElement, {
+    gameState = null,
+    selectedUnit = null,
+    canRender = null,
+    onGameStateChange = null,
+    onGoHome = null,
+  } = {}) {
     this.rootElement = rootElement;
     this.#questions = [];
     this.#questionIndex = 0;
     this.#questionState = new Map();
     this.#sourceInfo = {};
     this.#gameState = gameState;
+    this.#selectedUnitKey = normalizeUnitKey(selectedUnit);
+    this.#canRender = canRender instanceof Function ? canRender : () => true;
     this.#onGameStateChange = onGameStateChange instanceof Function ? onGameStateChange : () => {};
+    this.#onGoHome = onGoHome instanceof Function ? onGoHome : null;
   }
 
   get questions() {
@@ -150,7 +176,10 @@ export class WordBuildingGame {
     try {
       const questionBank = await queryClient.ensureQueryData(defaultQuestionBankQuery);
       this.#sourceInfo = questionBank.info ?? {};
-      this.#questions = questionBank.questions.map((question, index) => normalizeQuestion(question, index, this.#sourceInfo));
+      const questions = questionBank.questions.map((question, index) => normalizeQuestion(question, index, this.#sourceInfo));
+      this.#questions = this.#selectedUnitKey
+        ? questions.filter((question) => question.unitKey === this.#selectedUnitKey)
+        : questions;
       this.#applyGameState(this.#gameState);
       this.#questionIndex = Math.min(this.#questionIndex, Math.max(this.#questions.length - 1, 0));
       this.#renderQuestion();
@@ -160,6 +189,8 @@ export class WordBuildingGame {
   }
 
   #replaceRoot(element) {
+    if (!this.#canRender()) return;
+
     deferReplaceChildren(this.rootElement, element);
   }
 
@@ -328,7 +359,7 @@ export class WordBuildingGame {
         group: "word-building-top-controls",
         order: 0,
         events: {
-          "access-click": () => this.#restart(),
+          "access-click": () => this.#goHome(),
         },
       },
       {
@@ -343,6 +374,9 @@ export class WordBuildingGame {
       },
     ]], 0, 0);
 
+    const titleBlock = this.#createTitleBlock(question, state);
+    layout.add(titleBlock, [0, 0], [1, 2]);
+
     const questionSection = this.#createQuestionSection(question, state);
     layout.add(questionSection, [1, 2], [0, 4]);
 
@@ -355,16 +389,13 @@ export class WordBuildingGame {
   #createQuestionSection(question, state) {
     const questionSection = new SvgPlus("section");
     questionSection.classList.add("word-question-section");
-    questionSection.append(
-      this.#createTitleBlock(question),
-      this.#createBoard(question, state),
-      this.#createFeedback(question, state),
-    );
+    questionSection.append(this.#createBoard(question, state));
     return questionSection;
   }
 
-  #createTitleBlock(question) {
-    const titleBlock = createElement("div", "game-title-block");
+  #createTitleBlock(question, state) {
+    const titleBlock = new SvgPlus("div");
+    titleBlock.classList.add("game-title-block");
     const badge = createElement("div", "game-badge");
     badge.setAttribute("aria-hidden", "true");
     badge.append(
@@ -389,7 +420,7 @@ export class WordBuildingGame {
 
     const prompt = createElement("p", "word-prompt", question.prompt);
     prompt.id = "word-builder-prompt";
-    titleText.append(prompt);
+    titleText.append(prompt, this.#createFeedback(question, state));
 
     titleBlock.append(badge, titleText);
     return titleBlock;
@@ -580,6 +611,15 @@ export class WordBuildingGame {
     this.#questionState.clear();
     this.#commitGameState();
     this.#renderQuestion();
+  }
+
+  #goHome() {
+    if (this.#onGoHome) {
+      this.#onGoHome();
+      return;
+    }
+
+    this.#restart();
   }
 
   #preloadUtterance(question) {
