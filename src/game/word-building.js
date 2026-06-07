@@ -1,6 +1,6 @@
 import { deferReplaceChildren } from "../dom-utils";
 import { queryClient, defaultQuestionBankQuery } from "../queryClient";
-import { GridIcon } from "../squidly-utils";
+import { GridIcon, GridLayout, SvgPlus } from "../squidly-utils";
 
 class GameButton extends GridIcon {
   constructor(info = {}, group) {
@@ -301,19 +301,69 @@ export class WordBuildingGame {
     const state = this.#getQuestionState(question);
     this.#preloadUtterance(question);
 
-    const { main, panel } = this.#createShell();
-
-    panel.append(
-      this.#createHeader(question),
-      this.#createBoard(question, state),
-    );
+    const main = document.createElement("main");
+    main.className = "game-shell word-building-shell";
+    main.append(this.#createGameLayout(question, state));
 
     this.#replaceRoot(main);
   }
 
-  #createHeader(question) {
-    const header = createElement("header", "game-header");
+  #createGameLayout(question, state) {
+    const layout = new GridLayout(4, 5);
+    layout.classList.add("word-builder-layout");
+    layout.styles = {
+      "grid-template-rows": "repeat(4, minmax(0, 1fr))",
+      "grid-template-columns": "repeat(5, minmax(0, 1fr))",
+      gap: "clamp(0.5rem, 1.4vw, 0.9rem)",
+    };
 
+    layout.addItemInstances(GameButton, [[
+      null,
+      null,
+      null,
+      {
+        symbol: "home",
+        displayValue: "Home",
+        className: "icon-button",
+        group: "word-building-top-controls",
+        order: 0,
+        events: {
+          "access-click": () => this.#restart(),
+        },
+      },
+      {
+        symbol: "speaker",
+        displayValue: "Speak",
+        className: "icon-button",
+        group: "word-building-top-controls",
+        order: 1,
+        events: {
+          "access-click": () => this.#speakQuestion(question),
+        },
+      },
+    ]], 0, 0);
+
+    const questionSection = this.#createQuestionSection(question, state);
+    layout.add(questionSection, [1, 2], [0, 4]);
+
+    const { previous, clear, next } = this.#createActionButtons(question, state);
+    layout.addItems([[null, previous, clear, next, null]], 3, 0);
+
+    return layout;
+  }
+
+  #createQuestionSection(question, state) {
+    const questionSection = new SvgPlus("section");
+    questionSection.classList.add("word-question-section");
+    questionSection.append(
+      this.#createTitleBlock(question),
+      this.#createBoard(question, state),
+      this.#createFeedback(question, state),
+    );
+    return questionSection;
+  }
+
+  #createTitleBlock(question) {
     const titleBlock = createElement("div", "game-title-block");
     const badge = createElement("div", "game-badge");
     badge.setAttribute("aria-hidden", "true");
@@ -326,44 +376,39 @@ export class WordBuildingGame {
     const titleText = createElement("div", "game-title-text");
     titleText.append(createElement("h1", "game-title", question.title));
 
+    const metaRow = createElement("div", "game-meta-row");
+
     if (question.unit) {
-      titleText.append(createElement("p", "game-unit", question.unit));
+      metaRow.append(createElement("p", "game-unit", question.unit));
     }
 
-    titleText.append(createElement("p", "game-step", `Word ${this.#questionIndex + 1} of ${this.#questions.length}`));
+    metaRow.append(
+      createElement("p", "game-step", `Word ${this.#questionIndex + 1} of ${this.#questions.length}`),
+    );
+    titleText.append(metaRow);
+
+    const prompt = createElement("p", "word-prompt", question.prompt);
+    prompt.id = "word-builder-prompt";
+    titleText.append(prompt);
 
     titleBlock.append(badge, titleText);
-
-    const controls = createElement("div", "game-header-controls");
-    controls.append(
-      this.#createButton({
-        symbol: "home",
-        displayValue: "Home",
-        className: "icon-button",
-        order: 0,
-        onClick: () => this.#restart(),
-      }),
-      this.#createButton({
-        symbol: "speaker",
-        displayValue: "Speak",
-        className: "icon-button",
-        order: 1,
-        onClick: () => this.#speakQuestion(question),
-      }),
-    );
-
-    header.append(titleBlock, controls);
-    return header;
+    return titleBlock;
   }
 
   #createBoard(question, state) {
     const board = createElement("section", "word-board");
     board.setAttribute("aria-labelledby", "word-builder-prompt");
 
-    const prompt = createElement("p", "word-prompt", question.prompt);
-    prompt.id = "word-builder-prompt";
+    const letterBank = this.#createLetterBank(question, state);
+    const slots = this.#createAnswerSlots(question, state);
 
+    board.append(letterBank, slots);
+    return board;
+  }
+
+  #createLetterBank(question, state) {
     const letterBank = createElement("div", "letter-bank");
+
     question.tiles.forEach((tile, index) => {
       const isSelected = state.selectedTileIds.includes(tile.id);
       const tileButton = this.#createButton({
@@ -382,12 +427,7 @@ export class WordBuildingGame {
       letterBank.append(tileButton);
     });
 
-    const slots = this.#createAnswerSlots(question, state);
-    const feedback = this.#createFeedback(question, state);
-    const actions = this.#createActions(question, state);
-
-    board.append(prompt, letterBank, slots, feedback, actions);
-    return board;
+    return letterBank;
   }
 
   #createAnswerSlots(question, state) {
@@ -442,41 +482,41 @@ export class WordBuildingGame {
     return feedback;
   }
 
-  #createActions(question, state) {
-    const actions = createElement("div", "game-actions");
+  #createActionButtons(question, state) {
     const isFirst = this.#questionIndex === 0;
     const isLast = this.#questionIndex === this.#questions.length - 1;
 
-    actions.append(
-      this.#createButton({
+    return {
+      previous: this.#createButton({
         symbol: "leftArrow",
         displayValue: "Previous",
         className: "nav-button",
+        group: "word-building-navigation",
         order: 0,
         disabled: isFirst,
         onClick: () => this.#moveQuestion(-1),
       }),
-      this.#createButton({
+      clear: this.#createButton({
         symbol: "refresh",
         displayValue: "Clear",
         className: "nav-button",
+        group: "word-building-navigation",
         order: 1,
         disabled: state.selectedTileIds.length === 0,
         onClick: () => this.#clearQuestion(question),
       }),
-      this.#createButton({
+      next: this.#createButton({
         symbol: isLast ? "tick" : "rightArrow",
         displayValue: isLast ? "Restart" : "Next",
         className: "nav-button primary",
+        group: "word-building-navigation",
         order: 2,
         onClick: () => {
           if (isLast) this.#restart();
           else this.#moveQuestion(1);
         },
       }),
-    );
-
-    return actions;
+    };
   }
 
 
