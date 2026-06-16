@@ -24,7 +24,48 @@
           "words": [
             "in",
             "pin",
-            "tin"
+            "tin",
+            "because"
+          ]
+        },
+        {
+          "unit": 4,
+          "words": [
+            "it",
+            "sit",
+            "fit"
+          ]
+        },
+        {
+          "unit": 5,
+          "words": [
+            "op",
+            "top",
+            "hop"
+          ]
+        },
+        {
+          "unit": 6,
+          "words": [
+            "ug",
+            "bug",
+            "rug"
+          ]
+        },
+        {
+          "unit": 7,
+          "words": [
+            "en",
+            "pen",
+            "hen"
+          ]
+        },
+        {
+          "unit": 8,
+          "words": [
+            "ed",
+            "red",
+            "bed"
           ]
         }
       ]

@@ -302,6 +302,34 @@ grid-layout {
   font-weight: 900;
 }
 
+.unit-menu-pager {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: clamp(0.5rem, 1.4vw, 0.9rem);
+}
+
+.unit-menu-page-status {
+  align-self: center;
+  justify-self: center;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.78);
+  color: var(--text-h);
+  font-size: clamp(0.9rem, 1.7vw, 1.05rem);
+  font-weight: 900;
+  white-space: nowrap;
+  box-shadow: var(--shadow-tile);
+}
+
+.unit-menu-arrow-button {
+  min-width: 0;
+  min-height: 0;
+}
+
 /* Shared Squidly/Noci-style buttons ------------------------------------- */
 
 .game-button.grid-icon {

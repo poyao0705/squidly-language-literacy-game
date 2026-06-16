@@ -1,6 +1,6 @@
 import { WordBuildingGame } from "./game/word-building";
 import { queryClient, defaultQuestionBankQuery } from "./queryClient";
-import { AccessButton, GridLayout, SvgPlus } from "./squidly-utils";
+import { AccessButton, GridIcon, GridLayout, SvgPlus } from "./squidly-utils";
 
 const FIREBASE_KEYS = {
   ACTIVE_SCREEN: "state",
@@ -16,6 +16,7 @@ const SCREENS = {
 
 const DEFAULT_SCREEN = SCREENS.MENU;
 const SCREEN_VALUES = new Set(Object.values(SCREENS));
+const UNIT_MENU_CARD_ROWS = 2;
 
 function parseJSON(json) {
   try {
@@ -113,6 +114,7 @@ export class LanguageLiteracyGame {
     this.rootElement = rootElement;
     this.activeScreen = DEFAULT_SCREEN;
     this.selectedUnitKey = "";
+    this.unitMenuPage = 0;
     this.renderQueued = false;
   }
 
@@ -282,9 +284,15 @@ export class LanguageLiteracyGame {
     main.className = "game-shell unit-menu-shell";
 
     const columns = 11;
+    const rows = 7;
     const cardColumns = [[1, 3], [4, 6], [7, 9]];
-    const cardRows = Math.max(1, Math.ceil(units.length / cardColumns.length));
-    const rows = cardRows === 1 ? 5 : 2 + cardRows * 2;
+    const unitsPerPage = cardColumns.length * UNIT_MENU_CARD_ROWS;
+    const totalPages = Math.max(1, Math.ceil(units.length / unitsPerPage));
+    const currentPage = Math.min(Math.max(this.unitMenuPage, 0), totalPages - 1);
+    const visibleUnits = units.slice(currentPage * unitsPerPage, (currentPage + 1) * unitsPerPage);
+
+    this.unitMenuPage = currentPage;
+
     const layout = new GridLayout(rows, columns);
     layout.classList.add("unit-menu-layout");
     layout.styles = {
@@ -302,9 +310,9 @@ export class LanguageLiteracyGame {
     layout.add(header, [0, 1], [2, 8]);
 
     if (units.length === 0) {
-      layout.add(createElement("p", "empty-message", "No word-building units are available."), [3, 5], [2, 8]);
+      layout.add(createElement("p", "empty-message", "No word-building units are available."), [2, 5], [2, 8]);
     } else {
-      units.forEach((unit, index) => {
+      visibleUnits.forEach((unit, index) => {
         const rowIndex = Math.floor(index / cardColumns.length);
         const columnIndex = index % cardColumns.length;
         const rowStart = 2 + rowIndex * 2;
@@ -314,8 +322,74 @@ export class LanguageLiteracyGame {
       });
     }
 
+    layout.add(this.createUnitMenuPager(currentPage, totalPages), [6, 6], [2, 8]);
     main.append(layout);
     return main;
+  }
+
+  createUnitMenuPager(currentPage, totalPages) {
+    const pager = createElement("nav", "unit-menu-pager");
+    pager.setAttribute("aria-label", "Unit pages");
+
+    const pageStatus = createElement("p", "unit-menu-page-status", `Page ${currentPage + 1} of ${totalPages}`);
+
+    pager.append(
+      this.createUnitMenuArrowButton({
+        symbol: "leftArrow",
+        displayValue: "Previous",
+        order: 0,
+        disabled: currentPage === 0,
+        onClick: () => this.showUnitMenuPage(currentPage - 1),
+      }),
+      pageStatus,
+      this.createUnitMenuArrowButton({
+        symbol: "rightArrow",
+        displayValue: "Next",
+        order: 1,
+        disabled: currentPage >= totalPages - 1,
+        onClick: () => this.showUnitMenuPage(currentPage + 1),
+      }),
+    );
+
+    return pager;
+  }
+
+  createUnitMenuArrowButton({ symbol, displayValue, order, disabled, onClick }) {
+    const button = new GridIcon({
+      symbol,
+      displayValue,
+      type: { theme: "language-button", card: false },
+      disabled,
+      events: {
+        "access-click": (event) => {
+          if (button.disabled || !onClick) return;
+          onClick(event);
+        },
+      },
+    }, "unit-menu-navigation");
+
+    button.classList.add("game-button", "nav-button", "unit-menu-arrow-button");
+    button.setAttribute("access-order", String(order));
+    button.setAttribute("aria-label", displayValue);
+    button.setAttribute("aria-disabled", String(Boolean(disabled)));
+    button.tabIndex = disabled ? -1 : 0;
+
+    button.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      button.click();
+    });
+
+    return button;
+  }
+
+  showUnitMenuPage(pageIndex) {
+    const nextPage = Math.max(0, pageIndex);
+
+    if (nextPage === this.unitMenuPage) return;
+
+    this.unitMenuPage = nextPage;
+    this.requestRender();
   }
 
   createUnitCard(unit, index) {
