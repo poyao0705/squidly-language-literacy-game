@@ -348,40 +348,14 @@ export class WordBuildingGame {
       gap: "clamp(0.5rem, 1.4vw, 0.9rem)",
     };
 
-    layout.addItemInstances(GameButton, [[
-      null,
-      null,
-      null,
-      {
-        symbol: "home",
-        displayValue: "Home",
-        className: "icon-button",
-        group: "word-building-top-controls",
-        order: 0,
-        events: {
-          "access-click": () => this.#goHome(),
-        },
-      },
-      {
-        symbol: "speaker",
-        displayValue: "Speak",
-        className: "icon-button",
-        group: "word-building-top-controls",
-        order: 1,
-        events: {
-          "access-click": () => this.#speakQuestion(question),
-        },
-      },
-    ]], 0, 0);
-
     const titleBlock = this.#createTitleBlock(question, state);
     layout.add(titleBlock, [0, 0], [1, 2]);
 
     const questionSection = this.#createQuestionSection(question, state);
     layout.add(questionSection, [1, 2], [0, 4]);
 
-    const { previous, clear, next } = this.#createActionButtons(question, state);
-    layout.addItems([[null, previous, clear, next, null]], 3, 0);
+    const { home, previous, clear, next, speaker } = this.#createActionButtons(question, state);
+    layout.addItems([[home, previous, clear, next, speaker]], 3, 0);
 
     return layout;
   }
@@ -518,12 +492,20 @@ export class WordBuildingGame {
     const isLast = this.#questionIndex === this.#questions.length - 1;
 
     return {
+      home: this.#createButton({
+        symbol: "home",
+        displayValue: "Home",
+        className: "nav-button icon-button",
+        group: "word-building-navigation",
+        order: 0,
+        onClick: () => this.#goHome(),
+      }),
       previous: this.#createButton({
         symbol: "leftArrow",
         displayValue: "Previous",
         className: "nav-button",
         group: "word-building-navigation",
-        order: 0,
+        order: 1,
         disabled: isFirst,
         onClick: () => this.#moveQuestion(-1),
       }),
@@ -532,7 +514,7 @@ export class WordBuildingGame {
         displayValue: "Clear",
         className: "nav-button",
         group: "word-building-navigation",
-        order: 1,
+        order: 2,
         disabled: state.selectedTileIds.length === 0,
         onClick: () => this.#clearQuestion(question),
       }),
@@ -541,11 +523,19 @@ export class WordBuildingGame {
         displayValue: isLast ? "Restart" : "Next",
         className: "nav-button primary",
         group: "word-building-navigation",
-        order: 2,
+        order: 3,
         onClick: () => {
           if (isLast) this.#restart();
           else this.#moveQuestion(1);
         },
+      }),
+      speaker: this.#createButton({
+        symbol: "speaker",
+        displayValue: "Speak",
+        className: "nav-button icon-button",
+        group: "word-building-navigation",
+        order: 4,
+        onClick: () => this.#speakQuestion(question),
       }),
     };
   }
