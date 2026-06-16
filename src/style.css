@@ -165,6 +165,15 @@ grid-layout {
   font-weight: 700;
 }
 
+.unit-menu-card-row {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: clamp(0.5rem, 1.4vw, 0.9rem);
+}
+
 .unit-card {
   position: relative;
   width: 100%;
@@ -178,7 +187,7 @@ grid-layout {
   justify-items: center;
   gap: clamp(0.25rem, 0.8vw, 0.45rem);
   padding: clamp(0.65rem, 1.4vw, 0.95rem);
-  border: 0.2rem solid #2d5b67;
+  border: 0.2rem solid transparent;
   border-radius: 1rem;
   background: linear-gradient(180deg, #ffe27f, #f9a63a);
   color: #2f2a43;
@@ -300,15 +309,6 @@ grid-layout {
   color: #2f2a43;
   font-size: clamp(0.85rem, 1.7vw, 1rem);
   font-weight: 900;
-}
-
-.unit-menu-pager {
-  min-width: 0;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: stretch;
-  gap: clamp(0.5rem, 1.4vw, 0.9rem);
 }
 
 .unit-menu-page-status {

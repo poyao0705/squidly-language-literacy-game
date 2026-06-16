@@ -16,7 +16,6 @@ const SCREENS = {
 
 const DEFAULT_SCREEN = SCREENS.MENU;
 const SCREEN_VALUES = new Set(Object.values(SCREENS));
-const UNIT_MENU_CARD_ROWS = 2;
 
 function parseJSON(json) {
   try {
@@ -283,10 +282,9 @@ export class LanguageLiteracyGame {
     const main = document.createElement("main");
     main.className = "game-shell unit-menu-shell";
 
-    const columns = 11;
-    const rows = 7;
-    const cardColumns = [[1, 3], [4, 6], [7, 9]];
-    const unitsPerPage = cardColumns.length * UNIT_MENU_CARD_ROWS;
+    const columns = 5;
+    const rows = 4;
+    const unitsPerPage = 3;
     const totalPages = Math.max(1, Math.ceil(units.length / unitsPerPage));
     const currentPage = Math.min(Math.max(this.unitMenuPage, 0), totalPages - 1);
     const visibleUnits = units.slice(currentPage * unitsPerPage, (currentPage + 1) * unitsPerPage);
@@ -307,51 +305,45 @@ export class LanguageLiteracyGame {
       createElement("h1", "unit-menu-title", questionBank?.info?.title || "Word Building"),
       createElement("p", "unit-menu-subtitle", "Choose a unit to start practicing words."),
     );
-    layout.add(header, [0, 1], [2, 8]);
+    layout.add(header, 0, 0, 0, 4);
 
     if (units.length === 0) {
-      layout.add(createElement("p", "empty-message", "No word-building units are available."), [2, 5], [2, 8]);
+      layout.add(createElement("p", "empty-message", "No word-building units are available."), [1, 2], [1, 3]);
     } else {
-      visibleUnits.forEach((unit, index) => {
-        const rowIndex = Math.floor(index / cardColumns.length);
-        const columnIndex = index % cardColumns.length;
-        const rowStart = 2 + rowIndex * 2;
-        const rowEnd = rowStart + 1;
+      const cardRow = createElement("section", "unit-menu-card-row");
+      cardRow.setAttribute("aria-label", "Units");
 
-        layout.add(this.createUnitCard(unit, index), [rowStart, rowEnd], cardColumns[columnIndex]);
+      visibleUnits.forEach((unit, index) => {
+        cardRow.append(this.createUnitCard(unit, index));
       });
+
+      layout.add(cardRow, [1, 2], [0, 4]);
     }
 
-    layout.add(this.createUnitMenuPager(currentPage, totalPages), [6, 6], [2, 8]);
+    layout.add(this.createUnitMenuArrowButton({
+      symbol: "leftArrow",
+      displayValue: "Previous",
+      order: 0,
+      disabled: currentPage === 0,
+      onClick: () => this.showUnitMenuPage(currentPage - 1),
+    }), 3, 1);
+    layout.add(this.createUnitMenuPageStatus(currentPage, totalPages), 3, 2);
+    layout.add(this.createUnitMenuArrowButton({
+      symbol: "rightArrow",
+      displayValue: "Next",
+      order: 1,
+      disabled: currentPage >= totalPages - 1,
+      onClick: () => this.showUnitMenuPage(currentPage + 1),
+    }), 3, 3);
+
     main.append(layout);
     return main;
   }
 
-  createUnitMenuPager(currentPage, totalPages) {
-    const pager = createElement("nav", "unit-menu-pager");
-    pager.setAttribute("aria-label", "Unit pages");
-
+  createUnitMenuPageStatus(currentPage, totalPages) {
     const pageStatus = createElement("p", "unit-menu-page-status", `Page ${currentPage + 1} of ${totalPages}`);
-
-    pager.append(
-      this.createUnitMenuArrowButton({
-        symbol: "leftArrow",
-        displayValue: "Previous",
-        order: 0,
-        disabled: currentPage === 0,
-        onClick: () => this.showUnitMenuPage(currentPage - 1),
-      }),
-      pageStatus,
-      this.createUnitMenuArrowButton({
-        symbol: "rightArrow",
-        displayValue: "Next",
-        order: 1,
-        disabled: currentPage >= totalPages - 1,
-        onClick: () => this.showUnitMenuPage(currentPage + 1),
-      }),
-    );
-
-    return pager;
+    pageStatus.setAttribute("aria-live", "polite");
+    return pageStatus;
   }
 
   createUnitMenuArrowButton({ symbol, displayValue, order, disabled, onClick }) {
