@@ -408,7 +408,8 @@ export class WordBuildingGame {
     const letterBank = createElement("div", "letter-bank");
 
     question.tiles.forEach((tile, index) => {
-      const isSelected = state.selectedTileIds.includes(tile.id);
+      if (state.selectedTileIds.includes(tile.id)) return;
+
       const tileButton = this.#createButton({
         displayValue: tile.value,
         className: "letter-tile",
@@ -417,11 +418,7 @@ export class WordBuildingGame {
         order: index,
         onClick: () => this.#toggleTile(question, tile.id),
       });
-      tileButton.selected = isSelected;
-      tileButton.setAttribute(
-        "aria-label",
-        `${tile.value}${isSelected ? " selected" : ""}`,
-      );
+      tileButton.setAttribute("aria-label", `Spell ${tile.value}`);
       letterBank.append(tileButton);
     });
 
