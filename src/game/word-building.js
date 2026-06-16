@@ -349,7 +349,7 @@ export class WordBuildingGame {
     };
 
     const titleBlock = this.#createTitleBlock(question, state);
-    layout.add(titleBlock, [0, 0], [1, 2]);
+    layout.add(titleBlock, 0, [3, 4]);
 
     const questionSection = this.#createQuestionSection(question, state);
     layout.add(questionSection, [1, 2], [0, 4]);
@@ -370,13 +370,6 @@ export class WordBuildingGame {
   #createTitleBlock(question, state) {
     const titleBlock = new SvgPlus("div");
     titleBlock.classList.add("game-title-block");
-    const badge = createElement("div", "game-badge");
-    badge.setAttribute("aria-hidden", "true");
-    badge.append(
-      createElement("span", "badge-letter badge-letter-m", "m"),
-      createElement("span", "badge-letter badge-letter-t", "t"),
-      createElement("span", "badge-letter badge-letter-a", "a"),
-    );
 
     const titleText = createElement("div", "game-title-text");
     titleText.append(createElement("h1", "game-title", question.title));
@@ -396,7 +389,7 @@ export class WordBuildingGame {
     prompt.id = "word-builder-prompt";
     titleText.append(prompt, this.#createFeedback(question, state));
 
-    titleBlock.append(badge, titleText);
+    titleBlock.append(titleText);
     return titleBlock;
   }
 
