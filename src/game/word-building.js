@@ -484,8 +484,8 @@ export class WordBuildingGame {
     return {
       home: this.#createButton({
         symbol: "home",
-        displayValue: "Home",
-        className: "nav-button icon-button",
+        displayValue: "Menu",
+        className: "nav-button",
         group: "word-building-navigation",
         order: 0,
         onClick: () => this.#goHome(),
@@ -522,7 +522,7 @@ export class WordBuildingGame {
       speaker: this.#createButton({
         symbol: "speaker",
         displayValue: "Speak",
-        className: "nav-button icon-button",
+        className: "nav-button",
         group: "word-building-navigation",
         order: 4,
         onClick: () => this.#speakQuestion(question),
