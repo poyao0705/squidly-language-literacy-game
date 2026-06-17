@@ -468,7 +468,7 @@ export class WordBuildingGame {
       feedback.textContent = "Great job!";
       feedback.classList.add("success");
     } else if (state.incorrect) {
-      feedback.textContent = "Not quite. Change a tile or clear the word and try again.";
+      feedback.textContent = "Not quite. Try again.";
       feedback.classList.add("error");
     } else {
       feedback.textContent = `${selectedCount} of ${totalCount} slots filled`;
