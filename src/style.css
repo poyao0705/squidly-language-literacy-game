@@ -790,6 +790,79 @@ grid-layout {
   color: var(--error);
 }
 
+/* Result summary ---------------------------------------------------------- */
+
+.result-summary-section {
+  align-items: center;
+  justify-items: center;
+  padding: clamp(0.75rem, 1.8vw, 1.25rem);
+}
+
+.result-summary-card {
+  width: min(100%, 52rem);
+  display: grid;
+  gap: clamp(0.7rem, 1.6vw, 1.15rem);
+  padding: clamp(0.9rem, 2vw, 1.35rem);
+  border: 0.12rem solid rgb(53 51 56 / 0.1);
+  border-radius: 0.65rem;
+  background: rgb(255 253 248 / 0.9);
+  color: var(--text-h);
+  text-align: center;
+  box-shadow: var(--shadow-soft);
+}
+
+.result-summary-title {
+  color: var(--text-h);
+  font-size: clamp(1.45rem, 3.3vw, 2.35rem);
+  line-height: 1;
+}
+
+.result-summary-subtitle {
+  color: var(--text);
+  font-size: clamp(0.9rem, 1.7vw, 1.05rem);
+  font-weight: 800;
+}
+
+.result-summary-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.55rem, 1.3vw, 0.9rem);
+  margin: 0;
+}
+
+.result-summary-stat {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 0.35rem;
+  padding: clamp(0.65rem, 1.4vw, 0.95rem);
+  border: 1px solid var(--panel-border);
+  border-radius: 0.55rem;
+  background: var(--panel-bg);
+  box-shadow: var(--shadow-tile);
+}
+
+.result-summary-label,
+.result-summary-value {
+  margin: 0;
+}
+
+.result-summary-label {
+  color: var(--text);
+  font-size: clamp(0.78rem, 1.35vw, 0.92rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.result-summary-value {
+  color: var(--text-h);
+  font-family: var(--button-font);
+  font-size: clamp(1rem, 2.1vw, 1.55rem);
+  font-weight: 900;
+  line-height: 1.1;
+}
+
 @media (max-width: 640px) {
   .game-shell {
     --page-pad: 0.5rem;
@@ -831,5 +904,9 @@ grid-layout {
 
   .nav-button .content {
     gap: 0.15rem;
+  }
+
+  .result-summary-list {
+    grid-template-columns: 1fr;
   }
 }

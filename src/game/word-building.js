@@ -43,6 +43,42 @@ function createElement(tagName, className, textContent = null) {
   return element;
 }
 
+const GAME_VIEWS = {
+  PLAY: "play",
+  RESULT: "result",
+};
+
+function normalizeTimestamp(value) {
+  const timestamp = Number(value);
+  return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : null;
+}
+
+function normalizeCount(value) {
+  const count = Number(value);
+  return Number.isFinite(count) && count > 0 ? Math.round(count) : 0;
+}
+
+function formatElapsedTime(milliseconds) {
+  const totalSeconds = Math.max(0, Math.round(milliseconds / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+}
+
+function formatPercentage(value, total) {
+  if (total <= 0) return "0%";
+  return `${Math.round((value / total) * 100)}%`;
+}
+
+function formatAverage(value) {
+  if (!Number.isFinite(value)) return "0";
+  return value % 1 === 0 ? String(value) : value.toFixed(1);
+}
+
 function getQuestionWord(question) {
   if (typeof question === "string") return question;
   if (!question || typeof question !== "object") return "";
@@ -174,6 +210,9 @@ export class WordBuildingGame {
   #sourceInfo;
   #gameState;
   #selectedUnitKey;
+  #viewState;
+  #startedAt;
+  #completedAt;
   #canRender;
   #onGameStateChange;
   #onGoHome;
@@ -192,6 +231,9 @@ export class WordBuildingGame {
     this.#sourceInfo = {};
     this.#gameState = gameState;
     this.#selectedUnitKey = normalizeUnitKey(selectedUnit);
+    this.#viewState = GAME_VIEWS.PLAY;
+    this.#startedAt = Date.now();
+    this.#completedAt = null;
     this.#canRender = canRender instanceof Function ? canRender : () => true;
     this.#onGameStateChange = onGameStateChange instanceof Function ? onGameStateChange : () => {};
     this.#onGoHome = onGoHome instanceof Function ? onGoHome : null;
@@ -211,9 +253,19 @@ export class WordBuildingGame {
       this.#questions = this.#selectedUnitKey
         ? questions.filter((question) => question.unitKey === this.#selectedUnitKey)
         : questions;
-      this.#applyGameState(this.#gameState);
+      const shouldCommitState = this.#applyGameState(this.#gameState);
       this.#questionIndex = Math.min(this.#questionIndex, Math.max(this.#questions.length - 1, 0));
-      this.#renderQuestion();
+      const completionStateChanged = this.#syncCompletionState();
+
+      if (shouldCommitState || completionStateChanged) {
+        this.#commitGameState();
+      }
+
+      if (this.#viewState === GAME_VIEWS.RESULT) {
+        this.#renderResult();
+      } else {
+        this.#renderQuestion();
+      }
     } catch (error) {
       this.#renderError(error);
     }
@@ -247,6 +299,8 @@ export class WordBuildingGame {
         selectedTileIds: [],
         completed: false,
         incorrect: false,
+        attempts: 0,
+        correctAttempts: 0,
       });
     }
 
@@ -262,9 +316,13 @@ export class WordBuildingGame {
   #applyGameState(gameState) {
     const questionCount = this.#questions.length;
     const rawIndex = Number(gameState?.questionIndex);
+    const startedAt = normalizeTimestamp(gameState?.startedAt);
     this.#questionIndex = Number.isFinite(rawIndex)
       ? Math.max(0, Math.min(Math.round(rawIndex), Math.max(questionCount - 1, 0)))
       : 0;
+    this.#viewState = gameState?.view === GAME_VIEWS.RESULT ? GAME_VIEWS.RESULT : GAME_VIEWS.PLAY;
+    this.#startedAt = startedAt ?? Date.now();
+    this.#completedAt = normalizeTimestamp(gameState?.completedAt);
 
     this.#questionState.clear();
 
@@ -284,11 +342,24 @@ export class WordBuildingGame {
         selectedTileIds,
         completed: false,
         incorrect: false,
+        attempts: normalizeCount(rawAnswer.attempts),
+        correctAttempts: normalizeCount(rawAnswer.correctAttempts),
       };
 
-      this.#updateAnswerState(question, state);
+      this.#updateAnswerState(question, state, { countAttempt: false });
+
+      if ((state.completed || state.incorrect) && state.attempts === 0) {
+        state.attempts = 1;
+      }
+      if (state.completed && state.correctAttempts === 0) {
+        state.correctAttempts = 1;
+      }
+      state.correctAttempts = Math.min(state.correctAttempts, state.attempts);
+
       this.#questionState.set(question.id, state);
     }
+
+    return startedAt === null;
   }
 
   #toGameState() {
@@ -296,23 +367,82 @@ export class WordBuildingGame {
 
     for (const question of this.#questions) {
       const state = this.#getQuestionState(question);
-      if (state.selectedTileIds.length === 0 && !state.completed && !state.incorrect) continue;
+      const attempts = normalizeCount(state.attempts);
+      const correctAttempts = normalizeCount(state.correctAttempts);
+
+      if (
+        state.selectedTileIds.length === 0
+        && !state.completed
+        && !state.incorrect
+        && attempts === 0
+        && correctAttempts === 0
+      ) continue;
 
       answers[question.id] = {
         selectedTileIds: [...state.selectedTileIds],
         completed: state.completed,
         incorrect: state.incorrect,
+        attempts,
+        correctAttempts,
       };
     }
 
     return {
+      view: this.#viewState,
       questionIndex: this.#questionIndex,
+      startedAt: this.#startedAt,
+      completedAt: this.#completedAt,
       answers,
     };
   }
 
   #commitGameState() {
+    this.#syncCompletionState();
     this.#onGameStateChange(this.#toGameState());
+  }
+
+  #allQuestionsCompleted() {
+    return this.#questions.length > 0
+      && this.#questions.every((question) => this.#getQuestionState(question).completed);
+  }
+
+  #syncCompletionState() {
+    const previousCompletedAt = this.#completedAt;
+    const previousViewState = this.#viewState;
+
+    if (this.#allQuestionsCompleted()) {
+      this.#completedAt = this.#completedAt ?? Date.now();
+    } else {
+      this.#completedAt = null;
+      if (this.#viewState === GAME_VIEWS.RESULT) {
+        this.#viewState = GAME_VIEWS.PLAY;
+      }
+    }
+
+    return previousCompletedAt !== this.#completedAt || previousViewState !== this.#viewState;
+  }
+
+  #getResultSummary() {
+    const totalWords = this.#questions.length;
+    let totalAttempts = 0;
+    let correctAttempts = 0;
+
+    for (const question of this.#questions) {
+      const state = this.#getQuestionState(question);
+      totalAttempts += normalizeCount(state.attempts);
+      correctAttempts += normalizeCount(state.correctAttempts);
+    }
+
+    const completedAt = this.#completedAt ?? Date.now();
+    const elapsedTime = Math.max(0, completedAt - this.#startedAt);
+
+    return {
+      totalWords,
+      totalAttempts,
+      correctAttempts,
+      elapsedTime,
+      averageAttempts: totalWords > 0 ? totalAttempts / totalWords : 0,
+    };
   }
 
   #createButton({
@@ -394,6 +524,138 @@ export class WordBuildingGame {
     layout.addItems([[home, previous, clear, next, speaker]], 3, 0);
 
     return layout;
+  }
+
+  #renderResult() {
+    const main = document.createElement("main");
+    main.className = "game-shell word-building-shell";
+    main.append(this.#createResultLayout());
+    this.#replaceRoot(main);
+  }
+
+  #createResultLayout() {
+    const layout = new GridLayout(4, 5);
+    const summary = this.#getResultSummary();
+    layout.classList.add("word-builder-layout");
+    layout.styles = {
+      "grid-template-rows": "repeat(4, minmax(0, 1fr))",
+      "grid-template-columns": "repeat(5, minmax(0, 1fr))",
+      gap: "clamp(0.5rem, 1.4vw, 0.9rem)",
+    };
+
+    layout.add(this.#createResultTitleBlock(summary), 0, [3, 4]);
+    layout.add(this.#createResultSection(summary), [1, 2], [0, 4]);
+
+    const { home, previous, clear, restart, speaker } = this.#createResultActionButtons();
+    layout.addItems([[home, previous, clear, restart, speaker]], 3, 0);
+
+    return layout;
+  }
+
+  #createResultTitleBlock(summary) {
+    const titleBlock = new SvgPlus("div");
+    titleBlock.classList.add("game-title-block");
+
+    const titleText = createElement("div", "game-title-text");
+    titleText.append(createElement("h1", "game-title", getSourceTitle(this.#sourceInfo)));
+
+    const metaRow = createElement("div", "game-meta-row");
+    const unit = this.#questions.find((question) => question.unit)?.unit;
+
+    if (unit) {
+      metaRow.append(createElement("p", "game-unit", unit));
+    }
+
+    metaRow.append(createElement("p", "game-step", "Results"));
+    titleText.append(metaRow);
+
+    const wordLabel = summary.totalWords === 1 ? "word" : "words";
+    titleText.append(createElement("p", "word-prompt", `You spelled ${summary.totalWords} ${wordLabel}.`));
+
+    titleBlock.append(titleText);
+    return titleBlock;
+  }
+
+  #createResultSection(summary) {
+    const resultSection = new SvgPlus("section");
+    resultSection.classList.add("word-question-section", "result-summary-section");
+
+    const card = createElement("div", "result-summary-card");
+    card.append(
+      createElement("h2", "result-summary-title", "Great spelling!"),
+      createElement("p", "result-summary-subtitle", "Here is your result summary."),
+    );
+
+    const stats = createElement("dl", "result-summary-list");
+    stats.append(
+      this.#createResultStat("Total time used", formatElapsedTime(summary.elapsedTime)),
+      this.#createResultStat(
+        "Spelling correctness",
+        `${formatPercentage(summary.correctAttempts, summary.totalAttempts)} (${summary.correctAttempts}/${summary.totalAttempts})`,
+      ),
+      this.#createResultStat(
+        "Average attempts per word",
+        `${formatAverage(summary.averageAttempts)} attempts/word`,
+      ),
+    );
+
+    card.append(stats);
+    resultSection.append(card);
+    return resultSection;
+  }
+
+  #createResultStat(label, value) {
+    const stat = createElement("div", "result-summary-stat");
+    stat.append(
+      createElement("dt", "result-summary-label", label),
+      createElement("dd", "result-summary-value", value),
+    );
+    return stat;
+  }
+
+  #createResultActionButtons() {
+    return {
+      home: this.#createButton({
+        symbol: "home",
+        displayValue: "Menu",
+        className: "nav-button",
+        group: "word-building-navigation",
+        order: 0,
+        onClick: () => this.#goHome(),
+      }),
+      previous: this.#createButton({
+        symbol: "leftArrow",
+        displayValue: "Previous",
+        className: "nav-button",
+        group: "word-building-navigation",
+        order: 1,
+        disabled: true,
+      }),
+      clear: this.#createButton({
+        symbol: "refresh",
+        displayValue: "Clear",
+        className: "nav-button",
+        group: "word-building-navigation",
+        order: 2,
+        disabled: true,
+      }),
+      restart: this.#createButton({
+        symbol: "tick",
+        displayValue: "Restart",
+        className: "nav-button primary",
+        group: "word-building-navigation",
+        order: 3,
+        onClick: () => this.#restart(),
+      }),
+      speaker: this.#createButton({
+        symbol: "speaker",
+        displayValue: "Speak",
+        className: "nav-button",
+        group: "word-building-navigation",
+        order: 4,
+        disabled: true,
+      }),
+    };
   }
 
   #createQuestionSection(question, state) {
@@ -540,6 +802,7 @@ export class WordBuildingGame {
   #createActionButtons(question, state) {
     const isFirst = this.#questionIndex === 0;
     const isLast = this.#questionIndex === this.#questions.length - 1;
+    const allCompleted = this.#allQuestionsCompleted();
 
     return {
       home: this.#createButton({
@@ -570,12 +833,13 @@ export class WordBuildingGame {
       }),
       next: this.#createButton({
         symbol: isLast ? "tick" : "rightArrow",
-        displayValue: isLast ? "Restart" : "Next",
+        displayValue: isLast ? "Result" : "Next",
         className: "nav-button primary",
         group: "word-building-navigation",
         order: 3,
+        disabled: isLast && !allCompleted,
         onClick: () => {
-          if (isLast) this.#restart();
+          if (isLast) this.#showResult();
           else this.#moveQuestion(1);
         },
       }),
@@ -603,7 +867,7 @@ export class WordBuildingGame {
       state.selectedTileIds.push(tileId);
     }
 
-    this.#updateAnswerState(question, state);
+    this.#updateAnswerState(question, state, { countAttempt: true });
     this.#commitGameState();
     this.#renderQuestion();
   }
@@ -625,9 +889,11 @@ export class WordBuildingGame {
     this.#renderQuestion();
   }
 
-  #updateAnswerState(question, state) {
+  #updateAnswerState(question, state, { countAttempt = false } = {}) {
     state.completed = false;
     state.incorrect = false;
+    state.attempts = normalizeCount(state.attempts);
+    state.correctAttempts = normalizeCount(state.correctAttempts);
 
     if (state.selectedTileIds.length !== question.answerParts.length) return;
 
@@ -638,6 +904,13 @@ export class WordBuildingGame {
 
     state.completed = selectedWord === targetWord;
     state.incorrect = !state.completed;
+
+    if (countAttempt) {
+      state.attempts += 1;
+      if (state.completed) {
+        state.correctAttempts += 1;
+      }
+    }
   }
 
   #moveQuestion(step) {
@@ -647,9 +920,21 @@ export class WordBuildingGame {
     this.#renderQuestion();
   }
 
+  #showResult() {
+    if (!this.#allQuestionsCompleted()) return;
+
+    this.#syncCompletionState();
+    this.#viewState = GAME_VIEWS.RESULT;
+    this.#commitGameState();
+    this.#renderResult();
+  }
+
   #restart() {
     this.#questionIndex = 0;
     this.#questionState.clear();
+    this.#viewState = GAME_VIEWS.PLAY;
+    this.#startedAt = Date.now();
+    this.#completedAt = null;
     this.#commitGameState();
     this.#renderQuestion();
   }
