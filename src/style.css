@@ -634,6 +634,64 @@ grid-layout {
   gap: var(--puzzle-gap);
 }
 
+.word-icon-card {
+  width: min(100%, clamp(5.5rem, 13vw, 8.5rem));
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: clamp(0.25rem, 0.8vw, 0.5rem);
+  border: 0.12rem solid rgb(53 51 56 / 0.1);
+  border-radius: 0.65rem;
+  background: rgb(255 253 248 / 0.72);
+}
+
+.top-word-icon-card {
+  align-self: center;
+  justify-self: center;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.top-word-icon-card:hover,
+.top-word-icon-card[hover] {
+  background: var(--hover-bg);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft);
+}
+
+.top-word-icon-card:active,
+.top-word-icon-card[active] {
+  transform: translateY(1px) scale(0.98);
+}
+
+.word-icon-card .symbol,
+.word-icon-symbol {
+  width: min(100%, clamp(4rem, min(11vw, 14vh), 7rem));
+  height: min(100%, clamp(4rem, min(11vw, 14vh), 7rem));
+  display: grid;
+  place-items: center;
+}
+
+.word-icon-card .symbol img,
+.word-icon-card .symbol svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.word-icon-card .symbol .text {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--button-ink);
+  font-family: var(--button-font);
+  font-weight: 900;
+  line-height: 1;
+}
+
 .letter-bank {
   width: 100%;
   height: 100%;

@@ -6,66 +6,141 @@
         {
           "unit": 1,
           "words": [
-            "at",
-            "sat",
-            "mat"
+            {
+              "word": "at",
+              "symbol": { "text": "📍", "size": "4.6rem" }
+            },
+            {
+              "word": "sat",
+              "symbol": { "text": "🪑", "size": "4.6rem" }
+            },
+            {
+              "word": "mat",
+              "symbol": { "text": "▭", "size": "5rem" }
+            }
           ]
         },
         {
           "unit": 2,
           "words": [
-            "an",
-            "pan",
-            "can"
+            {
+              "word": "an",
+              "symbol": { "text": "A", "size": "4.8rem" }
+            },
+            {
+              "word": "pan",
+              "symbol": { "text": "🍳", "size": "4.6rem" }
+            },
+            {
+              "word": "can",
+              "symbol": { "text": "🥫", "size": "4.6rem" }
+            }
           ]
         },
         {
           "unit": 3,
           "words": [
-            "in",
-            "pin",
-            "tin",
-            "because"
+            {
+              "word": "in",
+              "symbol": { "text": "📥", "size": "4.6rem" }
+            },
+            {
+              "word": "pin",
+              "symbol": { "text": "📌", "size": "4.6rem" }
+            },
+            {
+              "word": "tin",
+              "symbol": { "text": "🥫", "size": "4.6rem" }
+            },
+            {
+              "word": "because",
+              "symbol": { "text": "❓", "size": "4.6rem" }
+            }
           ]
         },
         {
           "unit": 4,
           "words": [
-            "it",
-            "sit",
-            "fit"
+            {
+              "word": "it",
+              "symbol": { "text": "⭐", "size": "4.6rem" }
+            },
+            {
+              "word": "sit",
+              "symbol": { "text": "🪑", "size": "4.6rem" }
+            },
+            {
+              "word": "fit",
+              "symbol": { "text": "👕", "size": "4.6rem" }
+            }
           ]
         },
         {
           "unit": 5,
           "words": [
-            "op",
-            "top",
-            "hop"
+            {
+              "word": "op",
+              "symbol": { "text": "OP", "size": "4.2rem" }
+            },
+            {
+              "word": "top",
+              "symbol": { "text": "🔝", "size": "4.6rem" }
+            },
+            {
+              "word": "hop",
+              "symbol": { "text": "🐇", "size": "4.6rem" }
+            }
           ]
         },
         {
           "unit": 6,
           "words": [
-            "ug",
-            "bug",
-            "rug"
+            {
+              "word": "ug",
+              "symbol": { "text": "UG", "size": "4.2rem" }
+            },
+            {
+              "word": "bug",
+              "symbol": { "text": "🐞", "size": "4.6rem" }
+            },
+            {
+              "word": "rug",
+              "symbol": { "text": "🧶", "size": "4.6rem" }
+            }
           ]
         },
         {
           "unit": 7,
           "words": [
-            "en",
-            "pen",
-            "hen"
+            {
+              "word": "en",
+              "symbol": { "text": "EN", "size": "4.2rem" }
+            },
+            {
+              "word": "pen",
+              "symbol": { "text": "🖊️", "size": "4.6rem" }
+            },
+            {
+              "word": "hen",
+              "symbol": { "text": "🐔", "size": "4.6rem" }
+            }
           ]
         },
         {
           "unit": 8,
           "words": [
-            "ed",
-            "red",
-            "bed"
+            {
+              "word": "ed",
+              "symbol": { "text": "ED", "size": "4.2rem" }
+            },
+            {
+              "word": "red",
+              "symbol": { "text": "🔴", "size": "4.6rem" }
+            },
+            {
+              "word": "bed",
+              "symbol": { "text": "🛏️", "size": "4.6rem" }
+            }
           ]
         }
       ]

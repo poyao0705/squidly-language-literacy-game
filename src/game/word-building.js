@@ -1,6 +1,6 @@
 import { deferReplaceChildren } from "../dom-utils";
 import { queryClient, defaultQuestionBankQuery } from "../queryClient";
-import { GridIcon, GridLayout, SvgPlus } from "../squidly-utils";
+import { AccessButton, GridIcon, GridIconSymbol, GridLayout, SvgPlus } from "../squidly-utils";
 
 class GameButton extends GridIcon {
   constructor(info = {}, group) {
@@ -48,7 +48,37 @@ function getQuestionWord(question) {
   if (!question || typeof question !== "object") return "";
 
   const value = question.word ?? question.answer ?? question.text ?? "";
-  return Array.isArray(value) ? value.join("") : String(value);
+  if (Array.isArray(value)) return value.join("");
+  if (value && typeof value === "object") return getQuestionWord(value);
+  return String(value);
+}
+
+function normalizeSymbolValue(value) {
+  if (typeof value === "string") {
+    const symbol = value.trim();
+    return symbol ? symbol : null;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  if (typeof value.url === "string" && value.url.trim()) {
+    return { ...value, url: value.url.trim() };
+  }
+
+  if (typeof value.svg === "string" && value.svg.trim()) {
+    return { ...value, svg: value.svg };
+  }
+
+  if (value.text !== null && value.text !== undefined) {
+    return { ...value, text: String(value.text) };
+  }
+
+  return null;
+}
+
+function getQuestionSymbol(question) {
+  if (!question || typeof question !== "object" || Array.isArray(question)) return null;
+  return normalizeSymbolValue(question.symbol ?? question.icon ?? question.image ?? question.imageUrl);
 }
 
 function getAnswerParts(question, word) {
@@ -133,6 +163,7 @@ function normalizeQuestion(question, index, sourceInfo = {}) {
       value,
     })),
     utterance: isObject && question.utterance ? String(question.utterance) : word,
+    symbol: isObject ? getQuestionSymbol(question) : null,
   };
 }
 
@@ -351,6 +382,11 @@ export class WordBuildingGame {
     const titleBlock = this.#createTitleBlock(question, state);
     layout.add(titleBlock, 0, [3, 4]);
 
+    const wordIcon = this.#createWordIcon(question);
+    if (wordIcon) {
+      layout.add(wordIcon, 0, 2);
+    }
+
     const questionSection = this.#createQuestionSection(question, state);
     layout.add(questionSection, [1, 2], [0, 4]);
 
@@ -402,6 +438,30 @@ export class WordBuildingGame {
 
     board.append(letterBank, slots);
     return board;
+  }
+
+  #createWordIcon(question) {
+    if (!question.symbol) return null;
+
+    const wordIcon = new AccessButton("word-building-picture");
+    wordIcon.classList.add("word-icon-card", "top-word-icon-card");
+    wordIcon.setAttribute("access-order", "0");
+    wordIcon.setAttribute("aria-label", "Speak picture word");
+    wordIcon.setAttribute("role", "button");
+    wordIcon.tabIndex = 0;
+
+    const symbol = new GridIconSymbol(question.symbol);
+    symbol.classList.add("word-icon-symbol");
+    wordIcon.append(symbol);
+
+    wordIcon.addEventListener("access-click", () => this.#speakQuestion(question));
+    wordIcon.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      wordIcon.click();
+    });
+
+    return wordIcon;
   }
 
   #createLetterBank(question, state) {
@@ -525,7 +585,8 @@ export class WordBuildingGame {
         className: "nav-button",
         group: "word-building-navigation",
         order: 4,
-        onClick: () => this.#speakQuestion(question),
+        disabled: state.selectedTileIds.length !== question.answerParts.length,
+        onClick: () => this.#speakSpelledWord(question, state),
       }),
     };
   }
@@ -608,12 +669,29 @@ export class WordBuildingGame {
     api.loadUtterances([question.utterance]);
   }
 
+  #getSelectedWord(question, state) {
+    return this.#getSelectedTiles(question, state)
+      .map((tile) => tile.value)
+      .join("");
+  }
+
   #speakQuestion(question) {
-    const text = question.utterance || question.word;
+    this.#speakText(question.utterance || question.word, true);
+  }
+
+  #speakSpelledWord(question, state) {
+    if (state.selectedTileIds.length !== question.answerParts.length) return;
+    this.#speakText(this.#getSelectedWord(question, state), true);
+  }
+
+  #speakText(text, loadFirst = false) {
     if (!text) return;
 
     const api = globalThis.SquidlyAPI;
     if (api?.speak) {
+      if (loadFirst && api.loadUtterances) {
+        api.loadUtterances([text]);
+      }
       api.speak(text);
       return;
     }

@@ -4,11 +4,18 @@ function expandQuestion(question) {
   }
 
   const { words, ...questionInfo } = question;
-  return words.map((word, index) => ({
-    ...questionInfo,
-    word,
-    ...(questionInfo.id ? { id: `${questionInfo.id}-${index + 1}` } : {}),
-  }));
+  return words.map((word, index) => {
+    const wordInfo = word && typeof word === 'object' && !Array.isArray(word)
+      ? word
+      : { word };
+
+    return {
+      ...questionInfo,
+      ...wordInfo,
+      word: wordInfo.word ?? wordInfo.answer ?? wordInfo.text ?? word,
+      ...(questionInfo.id ? { id: `${questionInfo.id}-${index + 1}` } : {}),
+    };
+  });
 }
 
 function normalizeQuestionBank(data, gameId = null) {

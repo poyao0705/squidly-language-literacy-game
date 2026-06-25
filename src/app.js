@@ -57,7 +57,9 @@ function getQuestionWord(question) {
   if (!question || typeof question !== "object") return "";
 
   const value = question.word ?? question.answer ?? question.text ?? "";
-  return Array.isArray(value) ? value.join("") : String(value);
+  if (Array.isArray(value)) return value.join("");
+  if (value && typeof value === "object") return getQuestionWord(value);
+  return String(value);
 }
 
 function compareUnitOptions(a, b) {
