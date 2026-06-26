@@ -20,10 +20,4 @@ export const questionBankQuery = (gameId = null) => ({
 
 export const defaultQuestionBankQuery = questionBankQuery('word-building');
 
-// questions
-export const questionsQuery = (gameId = null) => ({
-  queryKey: ['questions', gameId],
-  queryFn: () => defaultRepository.fetchQuestions(gameId),
-});
 
-export const defaultQuestionsQuery = questionsQuery('word-building');

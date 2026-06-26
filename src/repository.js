@@ -50,10 +50,7 @@ class Source {
     throw new Error('fetchQuestionBank must be implemented');
   }
 
-  async fetchQuestions(gameId = null) {
-    const questionBank = await this.fetchQuestionBank(gameId);
-    return questionBank.questions;
-  }
+
 }
 
 
@@ -67,11 +64,6 @@ class DefaultBankSource extends Source {
   }
 }
 
-class DatabaseSource extends Source {
-  async fetchQuestions() {
-    // to be implemented
-  }
-}
 
 export class Repository {
   constructor(source) {
@@ -82,9 +74,6 @@ export class Repository {
     return this.source.fetchQuestionBank(gameId);
   }
 
-  async fetchQuestions(gameId = null) {
-    return this.source.fetchQuestions(gameId);
-  }
 }
 
 export const defaultRepository = new Repository(new DefaultBankSource());
