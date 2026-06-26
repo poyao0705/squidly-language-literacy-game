@@ -6,4 +6,5 @@ export default defineConfig({
     port: 5501,
     cors: true,
   },
+  base: "/"
 });
