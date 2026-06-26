@@ -112,9 +112,25 @@ function normalizeSymbolValue(value) {
   return null;
 }
 
+function normalizeImageUrl(value) {
+  if (typeof value === "string") {
+    const url = value.trim();
+    return url ? url : null;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  return typeof value.url === "string" && value.url.trim() ? value.url.trim() : null;
+}
+
+function getQuestionImageUrl(question) {
+  if (!question || typeof question !== "object" || Array.isArray(question)) return null;
+  return normalizeImageUrl(question.imageUrl ?? question.image);
+}
+
 function getQuestionSymbol(question) {
   if (!question || typeof question !== "object" || Array.isArray(question)) return null;
-  return normalizeSymbolValue(question.symbol ?? question.icon ?? question.image ?? question.imageUrl);
+  return normalizeSymbolValue(question.symbol ?? question.icon);
 }
 
 function getAnswerParts(question, word) {
@@ -199,6 +215,7 @@ function normalizeQuestion(question, index, sourceInfo = {}) {
       value,
     })),
     utterance: isObject && question.utterance ? String(question.utterance) : word,
+    imageUrl: isObject ? getQuestionImageUrl(question) : null,
     symbol: isObject ? getQuestionSymbol(question) : null,
   };
 }
@@ -703,7 +720,7 @@ export class WordBuildingGame {
   }
 
   #createWordIcon(question) {
-    if (!question.symbol) return null;
+    if (!question.imageUrl && !question.symbol) return null;
 
     const wordIcon = new AccessButton("word-building-picture");
     wordIcon.classList.add("word-icon-card", "top-word-icon-card");
@@ -712,9 +729,25 @@ export class WordBuildingGame {
     wordIcon.setAttribute("role", "button");
     wordIcon.tabIndex = 0;
 
-    const symbol = new GridIconSymbol(question.symbol);
-    symbol.classList.add("word-icon-symbol");
-    wordIcon.append(symbol);
+    const renderSymbolFallback = () => {
+      if (!question.symbol) return;
+      const symbol = new GridIconSymbol(question.symbol);
+      symbol.classList.add("word-icon-symbol");
+      wordIcon.replaceChildren(symbol);
+    };
+
+    if (question.imageUrl) {
+      const imageSymbol = createElement("div", "symbol word-icon-symbol");
+      const image = document.createElement("img");
+      image.alt = question.word ? `Picture for ${question.word}` : "Picture for word";
+      image.decoding = "async";
+      image.addEventListener("error", renderSymbolFallback, { once: true });
+      image.src = question.imageUrl;
+      imageSymbol.append(image);
+      wordIcon.append(imageSymbol);
+    } else {
+      renderSymbolFallback();
+    }
 
     wordIcon.addEventListener("access-click", () => this.#speakQuestion(question));
     wordIcon.addEventListener("keydown", (event) => {

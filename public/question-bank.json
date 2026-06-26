@@ -8,15 +8,18 @@
           "words": [
             {
               "word": "at",
-              "symbol": { "text": "📍", "size": "4.6rem" }
+              "symbol": { "text": "📍", "size": "4.6rem" },
+              "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FPRC%2FMYPLAC1-.png?alt=media&token=5ad11d86-a7d9-4d3f-8280-1f20190a459f"
             },
             {
               "word": "sat",
-              "symbol": { "text": "🪑", "size": "4.6rem" }
+              "symbol": { "text": "🪑", "size": "4.6rem" },
+              "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FPCS%2FSITONFL!.png?alt=media&token=a8b9c8cb-70b5-4c13-bc1d-72319d773017"
             },
             {
-              "word": "mat",
-              "symbol": { "text": "▭", "size": "5rem" }
+              "word": "sit",
+              "symbol": { "text": "▭", "size": "5rem" },
+              "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FPCS%2FSITONFL!.png?alt=media&token=a8b9c8cb-70b5-4c13-bc1d-72319d773017"
             }
           ]
         },
@@ -34,7 +37,18 @@
             {
               "word": "can",
               "symbol": { "text": "🥫", "size": "4.6rem" }
+            },
+            {
+              "word": "pin",
+              "symbol": { "text": "📌", "size": "4.6rem" },
+              "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FPCS%2FI76381!.png?alt=media&token=e5867819-df35-4977-89af-0c0a56fa04ff"
+            },
+            {
+              "word": "pot",
+              "symbol": { "text": "🥫", "size": "4.6rem" },
+              "imageUrl": ""
             }
+
           ]
         },
         {
