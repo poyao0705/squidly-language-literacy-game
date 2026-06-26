@@ -594,8 +594,8 @@ export class WordBuildingGame {
         `${formatPercentage(summary.correctAttempts, summary.totalAttempts)} (${summary.correctAttempts}/${summary.totalAttempts})`,
       ),
       this.#createResultStat(
-        "Average attempts per word",
-        `${formatAverage(summary.averageAttempts)} attempts/word`,
+        "Attempt per word",
+        `${formatAverage(summary.averageAttempts)}`,
       ),
     );
 
@@ -837,8 +837,9 @@ export class WordBuildingGame {
         className: "nav-button primary",
         group: "word-building-navigation",
         order: 3,
-        disabled: isLast && !allCompleted,
+        disabled: isLast ? !allCompleted : !state.completed,
         onClick: () => {
+          if (!state.completed) return;
           if (isLast) this.#showResult();
           else this.#moveQuestion(1);
         },
