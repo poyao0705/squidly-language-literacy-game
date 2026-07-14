@@ -6,9 +6,6 @@
 				{
 					"unit": 1,
 					"words": [
-						{ "word": "Sam", "imageUrl": "" },
-						{ "word": "Tim", "imageUrl": "" },
-						{ "word": "Tam", "imageUrl": "" },
 						{
 							"word": "at",
 							"symbol": {
@@ -184,25 +181,25 @@
 						{ "word": "hid", "imageUrl": "" },
 						{ "word": "if", "imageUrl": "" },
 						{ "word": "mad", "imageUrl": "" },
-						{ "word": "Meg", "imageUrl": "" },
+
 						{ "word": "men", "imageUrl": "" },
 						{ "word": "met", "imageUrl": "" },
 						{ "word": "mid", "imageUrl": "" },
-						{ "word": "Ned", "imageUrl": "" },
+
 						{ "word": "net", "imageUrl": "" },
 						{ "word": "nod", "imageUrl": "" },
 						{ "word": "pad", "imageUrl": "" },
 						{ "word": "peg", "imageUrl": "" },
-						{ "word": "Peg", "imageUrl": "" },
+
 						{ "word": "pen", "imageUrl": "" },
 						{ "word": "pet", "imageUrl": "" },
 						{ "word": "pod", "imageUrl": "" },
 						{ "word": "sad", "imageUrl": "" },
 						{ "word": "set", "imageUrl": "" },
 						{ "word": "tad", "imageUrl": "" },
-						{ "word": "Ted", "imageUrl": "" },
+
 						{ "word": "ten", "imageUrl": "" },
-						{ "word": "Tod", "imageUrl": "" },
+
 						{ "word": "vac", "imageUrl": "" },
 						{ "word": "van", "imageUrl": "" },
 						{ "word": "vat", "imageUrl": "" },
