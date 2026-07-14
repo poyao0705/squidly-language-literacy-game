@@ -14,8 +14,6 @@
 							},
 							"imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FPCS%2FI76381!.png?alt=media&token=e5867819-df35-4977-89af-0c0a56fa04ff"
 						},
-						{ "word": "it", "imageUrl": "" },
-						{ "word": "am", "imageUrl": "" },
 						{ "word": "mat", "imageUrl": "" },
 						{
 							"word": "sat",
@@ -97,8 +95,6 @@
 						{ "word": "tip", "imageUrl": "" },
 						{ "word": "top", "imageUrl": "" },
 						{ "word": "tot", "imageUrl": "" },
-						{ "word": "is", "imageUrl": "" },
-						{ "word": "a", "imageUrl": "" }
 					]
 				},
 				{
@@ -179,7 +175,6 @@
 					"unit": 4,
 					"words": [
 						{ "word": "hid", "imageUrl": "" },
-						{ "word": "if", "imageUrl": "" },
 						{ "word": "mad", "imageUrl": "" },
 
 						{ "word": "men", "imageUrl": "" },
