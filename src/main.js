@@ -1,4 +1,5 @@
 import "./style.css";
+import "./squidly-fonts.css";
 import { LanguageLiteracyGame } from "./app";
 
 const rootElement = document.querySelector("#app");
