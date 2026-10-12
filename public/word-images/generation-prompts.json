@@ -1,0 +1,136 @@
+{
+  "generator": "built-in image_gen",
+  "background": "white",
+  "prompts": [
+    {
+      "word": "Sam",
+      "unit": 1,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: A friendly young boy named Sam. Head-and-shoulders portrait, light skin, short straight brown hair, orange T-shirt, smiling gently and facing the viewer."
+    },
+    {
+      "word": "Tim",
+      "unit": 1,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: A friendly young boy named Tim. Head-and-shoulders portrait, medium-brown skin, short curly black hair, bright blue T-shirt, smiling gently and facing the viewer."
+    },
+    {
+      "word": "Tam",
+      "unit": 1,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: A friendly young girl named Tam. Head-and-shoulders portrait, light warm skin, straight black bob haircut with fringe, green T-shirt, smiling gently and facing the viewer."
+    },
+    {
+      "word": "Meg",
+      "unit": 4,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: A friendly young girl named Meg. Head-and-shoulders portrait, dark-brown skin, curly dark hair in two puffs, purple T-shirt, smiling gently and facing the viewer."
+    },
+    {
+      "word": "Ned",
+      "unit": 4,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: A friendly young boy named Ned. Head-and-shoulders portrait, light skin, short red hair with a side part and freckles, teal T-shirt, smiling and facing the viewer."
+    },
+    {
+      "word": "Ted",
+      "unit": 4,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: A friendly young boy named Ted. Head-and-shoulders portrait, medium olive skin, short wavy dark-brown hair, red T-shirt, smiling and facing the viewer."
+    },
+    {
+      "word": "Tod",
+      "unit": 4,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: A friendly young boy named Tod. Head-and-shoulders portrait, dark-brown skin, very short black hair, round blue eyeglasses, yellow T-shirt, smiling and facing the viewer."
+    },
+    {
+      "word": "it",
+      "unit": 1,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: Picture cue for the pronoun it: a large simple red ball, with a bold pointing hand clearly pointing at that ball. The ball is the central subject; the hand indicates the object. No word labels."
+    },
+    {
+      "word": "am",
+      "unit": 1,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: Picture cue for I am: one cheerful child in a blue shirt pointing to their own chest with an index finger, expressing self-identification. Waist-up view, facing the viewer. No text or letters."
+    },
+    {
+      "word": "nip",
+      "unit": 2,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: Picture cue for a small pinch or nip: close-up of a thumb and index finger gently pinching a tiny fold of skin on an arm. One simple hand and forearm, tiny motion marks at the pinch. No blood, no injury, no bite."
+    },
+    {
+      "word": "sin",
+      "unit": 2,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: Picture cue for doing something wrong: a child sneaking one cookie from another child's plate while that other child looks disappointed. A clear small red cross symbol above the taking hand indicates wrongdoing. Two simple figures and one plate, no religious iconography, no lettering."
+    },
+    {
+      "word": "tan",
+      "unit": 2,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: Picture cue for a suntan: close-up of one forearm showing clearly a medium-brown suntan line at the wrist next to a much paler band of skin under a removed watch, with a small simple sun in the corner. Fully clothed arm only, no lettering."
+    },
+    {
+      "word": "tot",
+      "unit": 2,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: A very young toddler, about two years old, standing steadily in a yellow T-shirt and blue dungarees, short hair and round baby face, clearly younger than a school-aged child. Full body centered, cheerful expression."
+    },
+    {
+      "word": "is",
+      "unit": 2,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: Picture cue for the linking verb is, using identity: a large red apple on the left, a bold black equals sign in the center, and the identical red apple on the right. Balanced, minimal three-element composition. No letters, words, or numbers. The equals sign is the only allowed symbol."
+    },
+    {
+      "word": "a",
+      "unit": 2,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: Picture cue for the indefinite article a, as in a ball: exactly ONE large simple blue ball centered, with ONE raised index finger beside it indicating a single thing. No other balls, no letters, no numeral."
+    },
+    {
+      "word": "mob",
+      "unit": 3,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: A compact crowd of six varied people standing close together, overlapping shoulders to show a mob or crowd, cheerful neutral faces and colorful simple shirts. Waist-up group, big readable silhouettes, no placards."
+    },
+    {
+      "word": "sag",
+      "unit": 3,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: A washing line stretched between two simple upright poles, visibly sagging down into a deep U shape under three damp colorful shirts. The strong downward sag is the main feature, bold clear silhouette, no background scene."
+    },
+    {
+      "word": "sob",
+      "unit": 3,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: A crying child sobbing, close-up face with eyes squeezed shut, downturned open mouth, and large clear blue tears flowing down both cheeks. One hand wiping a tear. The crying action must be unambiguous."
+    },
+    {
+      "word": "tab",
+      "unit": 3,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: A yellow file folder with a large protruding orange index tab at the top, a simple pointing arrow directed specifically at the tab. Plain folder without documents or text. The protruding tab is large and clearly visible."
+    },
+    {
+      "word": "if",
+      "unit": 4,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: Picture cue for if using a condition: a small dark rain cloud with blue falling raindrops on the left, a bold simple right-pointing black arrow in the center, and a large open red umbrella on the right. Shows if it rains then use an umbrella. No writing, no letters."
+    },
+    {
+      "word": "men",
+      "unit": 4,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: Exactly three adult men standing together, full-body figures with mature faces and adult proportions. Distinct shirts and trousers, varied skin tones, one with a short beard, friendly neutral expressions. Clearly a plural group of adult men."
+    },
+    {
+      "word": "vat",
+      "unit": 4,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: One very large open cylindrical industrial vat or tub, viewed at a slight angle from above so the wide open top is visible, filled halfway with light blue liquid, dark rim and two side handles. Big metal container without a lid, no taps or pipes, no labels."
+    },
+    {
+      "word": "dud",
+      "unit": 5,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: Picture cue for a dud, something that fails to work: one toy car with a detached wheel lying beside it and a clear small red cross beside the car. Harmless toy, plainly broken and unusable, no explosive, no weapons, no lettering."
+    },
+    {
+      "word": "fug",
+      "unit": 5,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: Picture cue for fug, stuffy stale air: one person in a cramped simplified room with a closed window, looking uncomfortable, surrounded by three grey wavy stale-air lines near their face. One hand fanning their face. No smoking, no flames, no lettering, keep composition sparse."
+    },
+    {
+      "word": "hub",
+      "unit": 5,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: Close-up of a simple bicycle wheel with a black outer rim and eight bold spokes, the CENTRAL HUB highlighted bright red and indicated by a clear small black pointing arrow. The center hub is large and visibly separate from the spokes. No numbers or lettering."
+    },
+    {
+      "word": "hum",
+      "unit": 5,
+      "prompt": "Use case: scientific-educational. Asset type: square picture cue in an early literacy word-building game, displayed at about 110 pixels wide. Style: simple accessible flat-color cartoon pictogram, bold smooth black outlines, bright clear solid fills, minimal detail, plain white background, no gradients, no shadow, no texture, no border. Composition: single large central subject with generous margin, readable at small size. Constraints: do not render any letters, word labels, captions, watermarks, logos or numbers; no words in the picture.\nSubject: A relaxed cheerful person humming a tune with CLOSED lips, eyes softly closed, two large musical notes floating beside their mouth. Head and shoulders, simple blue shirt. Lips must be visibly closed to distinguish humming from singing, no letters."
+    }
+  ]
+}

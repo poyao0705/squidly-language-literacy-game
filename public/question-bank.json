@@ -30,7 +30,12 @@
 								"size": "5rem"
 							},
 							"imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FPCS%2FSITONFL!.png?alt=media&token=a8b9c8cb-70b5-4c13-bc1d-72319d773017"
-						}
+						},
+						{ "word": "Sam", "imageUrl": "word-images/sam.jpg" },
+						{ "word": "Tim", "imageUrl": "word-images/tim.jpg" },
+						{ "word": "Tam", "imageUrl": "word-images/tam.jpg" },
+						{ "word": "it", "imageUrl": "word-images/it.jpg" },
+						{ "word": "am", "imageUrl": "word-images/am.jpg" }
 					]
 				},
 				{
@@ -90,7 +95,13 @@
 						{ "word": "tap", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FMTC%2FM082049%40.png?alt=media&token=fbf7fb29-bcc2-4fdb-9e64-a94737c6ff4b" },
 						{ "word": "tin", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FCLTY%2FTINCAN%23.png?alt=media&token=80625c30-438f-4435-acae-71da8ed63207" },
 						{ "word": "tip", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FPCS%2FI56900!.png?alt=media&token=48c944c7-555d-4b02-baa6-0d1ef3181926" },
-						{ "word": "top", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FPCS%2FI55066!.png?alt=media&token=c1d02971-a298-4d64-9216-1541ded4c136" }
+						{ "word": "top", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FPCS%2FI55066!.png?alt=media&token=c1d02971-a298-4d64-9216-1541ded4c136" },
+						{ "word": "nip", "imageUrl": "word-images/nip.jpg" },
+						{ "word": "sin", "imageUrl": "word-images/sin.jpg" },
+						{ "word": "tan", "imageUrl": "word-images/tan.jpg" },
+						{ "word": "tot", "imageUrl": "word-images/tot.jpg" },
+						{ "word": "is", "imageUrl": "word-images/is.jpg" },
+						{ "word": "a", "imageUrl": "word-images/a.jpg" }
 					]
 				},
 				{
@@ -155,7 +166,16 @@
 							},
 							"imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FPCS%2FI61173!.png?alt=media&token=ba26613a-a91d-4225-a614-bc9fce8a2d68"
 						},
-						{ "word": "ban", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FSCSH%2FNEWNOT1.png?alt=media&token=9f7aa7b1-d618-4526-a90f-3b0c67475be3" }
+						{ "word": "ban", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FSCSH%2FNEWNOT1.png?alt=media&token=9f7aa7b1-d618-4526-a90f-3b0c67475be3" },
+						{ "word": "gob", "imageUrl": "word-images/gob.svg" },
+						{ "word": "hag", "imageUrl": "word-images/hag.svg" },
+						{ "word": "mac", "imageUrl": "word-images/mac.svg" },
+						{ "word": "mob", "imageUrl": "word-images/mob.jpg" },
+						{ "word": "nag", "imageUrl": "word-images/nag.svg" },
+						{ "word": "sag", "imageUrl": "word-images/sag.jpg" },
+						{ "word": "sob", "imageUrl": "word-images/sob.jpg" },
+						{ "word": "tab", "imageUrl": "word-images/tab.jpg" },
+						{ "word": "bop", "imageUrl": "word-images/bop.svg" }
 					]
 				},
 				{
@@ -178,7 +198,18 @@
 						{ "word": "ten", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Fall%2F8qFwqYyfkAqni71NC3KZ?alt=media&token=d08add2d-13d3-4514-93ae-207473f645dd" },
 
 						{ "word": "van", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FWDGT%2FN4254%7B.png?alt=media&token=b013e1d2-7880-4ef1-b08a-1da678e5252a" },
-						{ "word": "vet", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FSCSH%2FVET.png?alt=media&token=4f39c5f0-5e1f-4a8b-b480-58c0fa03e90a" }
+						{ "word": "vet", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FSCSH%2FVET.png?alt=media&token=4f39c5f0-5e1f-4a8b-b480-58c0fa03e90a" },
+						{ "word": "if", "imageUrl": "word-images/if.jpg" },
+						{ "word": "Meg", "imageUrl": "word-images/meg.jpg" },
+						{ "word": "men", "imageUrl": "word-images/men.jpg" },
+						{ "word": "met", "imageUrl": "word-images/met.svg" },
+						{ "word": "mid", "imageUrl": "word-images/mid.svg" },
+						{ "word": "Ned", "imageUrl": "word-images/ned.jpg" },
+						{ "word": "tad", "imageUrl": "word-images/tad.svg" },
+						{ "word": "Ted", "imageUrl": "word-images/ted.jpg" },
+						{ "word": "Tod", "imageUrl": "word-images/tod.jpg" },
+						{ "word": "vac", "imageUrl": "word-images/vac.svg" },
+						{ "word": "vat", "imageUrl": "word-images/vat.jpg" }
 					]
 				},
 				{
@@ -203,7 +234,12 @@
 						{ "word": "kid", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FSYBX%2FMAN_4%5E.png?alt=media&token=09710a21-eaf3-4375-b5e7-36d9bc8712ec" },
 						{ "word": "kin", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FMTC%2Fkinder4%40.png?alt=media&token=8092ab5c-d59c-4f6e-8e60-80e0b53110d9" },
 						{ "word": "kip", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FPCS%2FLAZYRLE!.png?alt=media&token=f93fedd4-4cd3-4e59-a958-682fbf135d6b" },
-						{ "word": "kit", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FPCS%2FUNIFORM!.png?alt=media&token=fdcac057-8f1e-408e-830b-6f1238bdd9e7" }
+						{ "word": "kit", "imageUrl": "https://firebasestorage.googleapis.com/v0/b/eyesee-d0a42.appspot.com/o/icons%2Ficon-sets%2FPCS%2FUNIFORM!.png?alt=media&token=fdcac057-8f1e-408e-830b-6f1238bdd9e7" },
+						{ "word": "dud", "imageUrl": "word-images/dud.jpg" },
+						{ "word": "fug", "imageUrl": "word-images/fug.jpg" },
+						{ "word": "hub", "imageUrl": "word-images/hub.jpg" },
+						{ "word": "hum", "imageUrl": "word-images/hum.jpg" },
+						{ "word": "lad", "imageUrl": "word-images/lad.jpg" }
 					]
 				}
 			]
