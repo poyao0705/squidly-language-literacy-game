@@ -1121,7 +1121,7 @@ export class WordBuildingGame {
 			Number.isFinite(position.y)
 		) {
 			carriedTile.preview.hidden = false;
-			carriedTile.preview.style.transform = `translate3d(${position.x}px, ${position.y}px, 0)`;
+			carriedTile.preview.style.transform = `translate3d(${position.x}px, ${position.y}px, 0) translate(-50%, -50%)`;
 		} else {
 			carriedTile.preview.hidden = true;
 		}

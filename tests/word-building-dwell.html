@@ -359,10 +359,13 @@
 					const previewFont = Number.parseFloat(getComputedStyle(preview).fontSize);
 					assert(Math.abs(previewRect.width - sourceRect.width) < 1 && Math.abs(previewRect.height - sourceRect.height) < 1, "preview matches source tile dimensions");
 					assert(Math.abs(previewFont - sourceFont) < 1, "preview matches source letter size");
+					assert(Math.abs(previewRect.left + previewRect.width / 2 - 31) < 1 && Math.abs(previewRect.top + previewRect.height / 2 - 52) < 1, "preview is centered on the mouse cursor, not anchored by its top-left corner");
 
 					listeners[0]({ user: "host-eyes", source: "local", x: 80, y: 94 });
 					await nextFrame();
 					assert(preview.style.transform.includes("80px") && preview.style.transform.includes("94px"), "local gaze samples move the same preview");
+					const gazeRect = preview.getBoundingClientRect();
+					assert(Math.abs(gazeRect.left + gazeRect.width / 2 - 80) < 1 && Math.abs(gazeRect.top + gazeRect.height / 2 - 94) < 1, "preview stays centered after gaze cursor movement");
 					listeners[0]({ user: "participant-eyes", source: "remote", x: 300, y: 400 });
 					await nextFrame();
 					assert(preview.style.transform.includes("80px") && preview.style.transform.includes("94px"), "remote samples cannot move the local preview");
