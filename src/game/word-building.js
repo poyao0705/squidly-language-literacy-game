@@ -5,7 +5,6 @@ import {
 	GridIcon,
 	GridIconSymbol,
 	GridLayout,
-	getCursorPosition,
 	SvgPlus,
 } from "../squidly-utils";
 import { normalizeSlotTileIds, placeTileInSlot } from "./word-building-slots";
@@ -264,6 +263,7 @@ export class WordBuildingGame {
 	#canRender;
 	#onGameStateChange;
 	#onGoHome;
+	#getCursorSample;
 
 	constructor(
 		rootElement,
@@ -273,6 +273,7 @@ export class WordBuildingGame {
 			canRender = null,
 			onGameStateChange = null,
 			onGoHome = null,
+			getCursorSample = null,
 		} = {},
 	) {
 		this.rootElement = rootElement;
@@ -289,6 +290,8 @@ export class WordBuildingGame {
 		this.#onGameStateChange =
 			onGameStateChange instanceof Function ? onGameStateChange : () => {};
 		this.#onGoHome = onGoHome instanceof Function ? onGoHome : null;
+		this.#getCursorSample =
+			getCursorSample instanceof Function ? getCursorSample : () => null;
 	}
 
 	get questions() {
@@ -1054,6 +1057,13 @@ export class WordBuildingGame {
 		if (!tile) return;
 
 		const preview = createElement("div", "carried-letter-preview", tile.value);
+		const sourceRect = sourceButton.getBoundingClientRect();
+		const sourceDisplayValue = sourceButton.querySelector(".display-value");
+		preview.style.width = `${sourceRect.width}px`;
+		preview.style.height = `${sourceRect.height}px`;
+		preview.style.fontSize = getComputedStyle(
+			sourceDisplayValue ?? sourceButton,
+		).fontSize;
 		preview.setAttribute("aria-hidden", "true");
 		preview.style.pointerEvents = "none";
 		preview.hidden = true;
@@ -1091,9 +1101,7 @@ export class WordBuildingGame {
 		this.#announce(
 			`Selected ${tile.value}. Dwell on an empty slot to place it.`,
 		);
-		carriedTile.frameId = window.requestAnimationFrame(() =>
-			this.#updateCarriedPreview(carriedTile),
-		);
+		this.#updateCarriedPreview(carriedTile);
 	}
 
 	#updateCarriedPreview(carriedTile) {
@@ -1106,8 +1114,12 @@ export class WordBuildingGame {
 			return;
 		}
 
-		const position = getCursorPosition();
-		if (Number.isFinite(position?.x) && Number.isFinite(position?.y)) {
+		const position = this.#getCursorSample();
+		if (
+			position?.source === "local" &&
+			Number.isFinite(position.x) &&
+			Number.isFinite(position.y)
+		) {
 			carriedTile.preview.hidden = false;
 			carriedTile.preview.style.transform = `translate3d(${position.x}px, ${position.y}px, 0)`;
 		} else {

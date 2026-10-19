@@ -20,6 +20,7 @@
 		</main>
 		<div id="test-games"></div>
 		<script type="module">
+			import { LanguageLiteracyGame } from "/src/app.js";
 			import { WordBuildingGame } from "/src/game/word-building.js";
 			import { defaultQuestionBankQuery, queryClient } from "/src/queryClient.js";
 
@@ -84,9 +85,11 @@
 				return new Promise(requestAnimationFrame);
 			}
 
-			async function mount(unit, answers = {}, canRender = () => true) {
-				window.XPos = 0;
-				window.YPos = 0;
+			async function mount(
+				unit,
+				answers = {},
+				{ canRender = () => true, getCursorSample = () => null } = {},
+			) {
 				const root = document.createElement("div");
 				root.className = "test-game-root";
 				testRoots.add(root);
@@ -95,6 +98,7 @@
 				const game = new WordBuildingGame(root, {
 					selectedUnit: String(unit),
 					canRender,
+					getCursorSample,
 					gameState: {
 						view: "play",
 						questionIndex: 0,
@@ -116,15 +120,40 @@
 				};
 			}
 
+			async function withAppCursorAPI(run) {
+				const previousApi = globalThis.SquidlyAPI;
+				const listeners = [];
+				globalThis.SquidlyAPI = {
+					addCursorListener: (callback) => listeners.push(callback),
+				};
+				const root = document.createElement("div");
+				root.className = "test-game-root";
+				testRoots.add(root);
+				document.querySelector("#test-games").append(root);
+
+				try {
+					const app = new LanguageLiteracyGame(root);
+					await app.init();
+					await app.init();
+					app.activeScreen = "word-building";
+					app.selectedUnit = "1";
+					await settle();
+					await settle();
+					await run({ app, root, listeners });
+				} finally {
+					if (previousApi === undefined) delete globalThis.SquidlyAPI;
+					else globalThis.SquidlyAPI = previousApi;
+				}
+			}
+
 			async function activate(element) {
 				await element.accessClick("dwell");
 				await settle();
 			}
 
 			await check("pickup is transient and the preview follows cursor coordinates", async () => {
-				const game = await mount(1);
-				window.XPos = 31;
-				window.YPos = 52;
+				const cursor = { user: "host-mouse", source: "local", x: 31, y: 52 };
+				const game = await mount(1, {}, { getCursorSample: () => cursor });
 				const [first, second] = game.tiles();
 				await activate(first);
 				await nextFrame();
@@ -139,8 +168,8 @@
 				assert(game.progress.length === 0, "pickup does not save progress");
 				await activate(first);
 				assert(document.querySelectorAll(".carried-letter-preview").length === 1, "re-activating the carried letter does not cancel it");
-				window.XPos = 80;
-				window.YPos = 94;
+				cursor.x = 80;
+				cursor.y = 94;
 				await nextFrame();
 				assert(preview.style.transform.includes("80px") && preview.style.transform.includes("94px"), "preview updates while carrying");
 				await activate(second);
@@ -236,9 +265,13 @@
 			});
 
 			await check("Escape cancels without saving and bad coordinates do not move the preview", async () => {
-				const game = await mount(1);
-				window.XPos = Number.NaN;
-				window.YPos = Number.POSITIVE_INFINITY;
+				const cursor = {
+					user: "host-eyes",
+					source: "local",
+					x: Number.NaN,
+					y: Number.POSITIVE_INFINITY,
+				};
+				const game = await mount(1, {}, { getCursorSample: () => cursor });
 				await activate(game.tiles()[0]);
 				await nextFrame();
 				const preview = document.querySelector(".carried-letter-preview");
@@ -291,7 +324,7 @@
 
 			await check("view replacement cancels carry and rejects stale slots", async () => {
 				let canRender = true;
-				const game = await mount(1, {}, () => canRender);
+				const game = await mount(1, {}, { canRender: () => canRender });
 				const tile = game.tiles()[0];
 				const slot = game.slots()[0];
 				await activate(tile);
@@ -301,6 +334,43 @@
 				assert(!tile.hasAttribute("selected"), "stale game releases the source tile");
 				await activate(slot);
 				assert(game.progress.length === 0, "a replaced game cannot save a stale slot activation");
+			});
+
+			await check("app subscribes to Squidly cursor API once and renders without Firebase", async () => {
+				await withAppCursorAPI(async ({ root, listeners }) => {
+					assert(listeners.length === 1, "repeated initialization registers one permanent cursor listener");
+					assert(root.querySelector(".letter-tile"), "the app renders word-building without Firebase methods");
+				});
+			});
+
+			await check("local Squidly mouse and gaze samples move preview; remote samples are ignored", async () => {
+				await withAppCursorAPI(async ({ root, listeners }) => {
+					const tile = root.querySelector(".letter-tile");
+					assert(tile, "the real app renders a word-building letter");
+					await activate(tile);
+					const preview = root.querySelector(".carried-letter-preview");
+					assert(typeof listeners[0] === "function", "the Squidly listener is registered");
+					listeners[0]({ user: "host-mouse", source: "local", x: 31, y: 52 });
+					await nextFrame();
+					assert(preview.style.transform.includes("31px") && preview.style.transform.includes("52px"), "local mouse samples move the carried preview");
+					const sourceRect = tile.getBoundingClientRect();
+					const previewRect = preview.getBoundingClientRect();
+					const sourceFont = Number.parseFloat(getComputedStyle(tile.querySelector(".display-value")).fontSize);
+					const previewFont = Number.parseFloat(getComputedStyle(preview).fontSize);
+					assert(Math.abs(previewRect.width - sourceRect.width) < 1 && Math.abs(previewRect.height - sourceRect.height) < 1, "preview matches source tile dimensions");
+					assert(Math.abs(previewFont - sourceFont) < 1, "preview matches source letter size");
+
+					listeners[0]({ user: "host-eyes", source: "local", x: 80, y: 94 });
+					await nextFrame();
+					assert(preview.style.transform.includes("80px") && preview.style.transform.includes("94px"), "local gaze samples move the same preview");
+					listeners[0]({ user: "participant-eyes", source: "remote", x: 300, y: 400 });
+					await nextFrame();
+					assert(preview.style.transform.includes("80px") && preview.style.transform.includes("94px"), "remote samples cannot move the local preview");
+					listeners[0]({ user: "host-eyes", source: "local", x: Number.NaN, y: Number.POSITIVE_INFINITY });
+					await nextFrame();
+					assert(preview.hidden, "invalid local coordinates hide the preview");
+					assert(window.XPos === undefined && window.YPos === undefined, "cursor movement does not depend on host globals");
+				});
 			});
 
 			const summary = document.createElement("p");

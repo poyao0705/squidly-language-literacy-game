@@ -112,6 +112,8 @@ export class LanguageLiteracyGame {
 	#wordBuildingProgress = null;
 	#wordBuildingProgressJSON = "";
 	#renderVersion = 0;
+	#cursorSample = null;
+	#cursorListenerRegistered = false;
 
 	constructor(rootElement) {
 		this.rootElement = rootElement;
@@ -123,6 +125,16 @@ export class LanguageLiteracyGame {
 
 	async init() {
 		const api = globalThis.SquidlyAPI;
+
+		if (
+			!this.#cursorListenerRegistered &&
+			typeof api?.addCursorListener === "function"
+		) {
+			api.addCursorListener((sample) => {
+				if (sample?.source === "local") this.#cursorSample = sample;
+			});
+			this.#cursorListenerRegistered = true;
+		}
 
 		if (api?.firebaseOnValue) {
 			api.firebaseOnValue(FIREBASE_KEYS.ACTIVE_SCREEN, (value) => {
@@ -526,6 +538,7 @@ export class LanguageLiteracyGame {
 		const game = new WordBuildingGame(this.rootElement, {
 			gameState: this.wordBuildingProgress,
 			selectedUnit: this.selectedUnit,
+			getCursorSample: () => this.#cursorSample,
 			canRender: () =>
 				this.activeScreen === SCREENS.WORD_BUILDING &&
 				this.#isRenderCurrent(renderVersion),

@@ -803,14 +803,11 @@ grid-layout {
 	left: 0;
 	display: grid;
 	place-items: center;
-	width: var(--puzzle-tile-size);
-	height: var(--puzzle-tile-size);
 	border: 2px solid var(--tile-border);
 	border-radius: 0.55rem;
 	background: var(--panel-bg);
 	color: #050505;
 	font-family: "Trebuchet MS", system-ui, sans-serif;
-	font-size: var(--puzzle-letter-font-size);
 	font-weight: 700;
 	line-height: 1;
 	box-shadow: var(--shadow-tile);
