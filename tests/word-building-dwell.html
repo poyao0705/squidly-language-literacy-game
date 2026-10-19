@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Word-building cursor and dwell checks</title>
+		<link rel="stylesheet" href="/src/style.css" />
+		<style>
+			body { display: block; height: auto; min-height: 100vh; padding: 1.5rem; }
+			#results { font: 1rem/1.5 system-ui, sans-serif; }
+			#test-games { position: fixed; left: -10000px; top: 0; width: 800px; height: 600px; overflow: hidden; }
+			.pass { color: green; }
+			.fail { color: #b00020; }
+		</style>
+	</head>
+	<body>
+		<main>
+			<h1>Word-building cursor and dwell checks</h1>
+			<ol id="results" aria-live="polite"></ol>
+		</main>
+		<div id="test-games"></div>
+		<script type="module">
+			import { WordBuildingGame } from "/src/game/word-building.js";
+			import { defaultQuestionBankQuery, queryClient } from "/src/queryClient.js";
+
+			const questionBank = {
+				info: {},
+				questions: [
+					{
+						id: "unit-1-cat",
+						unit: "1",
+						word: "cat",
+						prompt: "Build cat.",
+						answerParts: ["c", "a", "t"],
+						tiles: ["c", "a", "t"],
+					},
+					{
+						id: "unit-2-llp",
+						unit: "2",
+						word: "llp",
+						prompt: "Build llp.",
+						answerParts: ["l", "l", "p"],
+						tiles: ["l", "l", "p"],
+					},
+				],
+			};
+			queryClient.setQueryData(defaultQuestionBankQuery.queryKey, questionBank);
+
+			const results = document.querySelector("#results");
+			let passed = 0;
+			let failed = 0;
+			const testRoots = new Set();
+
+			function assert(condition, message) {
+				if (!condition) throw new Error(message);
+			}
+
+			function check(name, run) {
+				const item = document.createElement("li");
+				results.append(item);
+				return Promise.resolve()
+					.then(run)
+					.then(() => {
+						passed += 1;
+						item.className = "pass";
+						item.textContent = `PASS ${name}`;
+					})
+					.catch((error) => {
+						failed += 1;
+						item.className = "fail";
+						item.textContent = `FAIL ${name}: ${error.message}`;
+					})
+					.finally(() => {
+						for (const root of testRoots) root.remove();
+						testRoots.clear();
+					});
+			}
+
+			function settle() {
+				return new Promise((resolve) => setTimeout(resolve, 0));
+			}
+
+			function nextFrame() {
+				return new Promise(requestAnimationFrame);
+			}
+
+			async function mount(unit, answers = {}, canRender = () => true) {
+				window.XPos = 0;
+				window.YPos = 0;
+				const root = document.createElement("div");
+				root.className = "test-game-root";
+				testRoots.add(root);
+				document.querySelector("#test-games").append(root);
+				const progress = [];
+				const game = new WordBuildingGame(root, {
+					selectedUnit: String(unit),
+					canRender,
+					gameState: {
+						view: "play",
+						questionIndex: 0,
+						startedAt: Date.now(),
+						completedAt: null,
+						answers,
+					},
+					onGameStateChange: (state) => progress.push(state),
+				});
+				await game.render();
+				await settle();
+				return {
+					root,
+					progress,
+					slots: () => [...root.querySelectorAll(".answer-slot")],
+					tiles: () => [...root.querySelectorAll(".letter-tile")],
+					status: () => root.querySelector(".word-feedback"),
+					clear: () => root.querySelector('[aria-label="Clear"]'),
+				};
+			}
+
+			async function activate(element) {
+				await element.accessClick("dwell");
+				await settle();
+			}
+
+			await check("pickup is transient and the preview follows cursor coordinates", async () => {
+				const game = await mount(1);
+				window.XPos = 31;
+				window.YPos = 52;
+				const [first, second] = game.tiles();
+				await activate(first);
+				await nextFrame();
+				const preview = document.querySelector(".carried-letter-preview");
+				assert(first.hasAttribute("selected"), "picked-up source is selected");
+				assert(preview?.getAttribute("aria-hidden") === "true", "preview is non-accessible decoration");
+				assert(preview.style.pointerEvents === "none", "preview cannot block slot targeting");
+				assert(!preview.hasAttribute("access-group"), "preview stays outside access-button groups");
+				assert(document.elementFromPoint(32, 52) !== preview, "preview does not intercept pointer targets");
+				assert(preview.style.transform.includes("31px") && preview.style.transform.includes("52px"), "preview uses viewport cursor coordinates");
+				assert(game.slots().every((slot) => !slot.classList.contains("filled")), "pickup does not fill a slot");
+				assert(game.progress.length === 0, "pickup does not save progress");
+				await activate(first);
+				assert(document.querySelectorAll(".carried-letter-preview").length === 1, "re-activating the carried letter does not cancel it");
+				window.XPos = 80;
+				window.YPos = 94;
+				await nextFrame();
+				assert(preview.style.transform.includes("80px") && preview.style.transform.includes("94px"), "preview updates while carrying");
+				await activate(second);
+				assert(!first.hasAttribute("selected") && second.hasAttribute("selected"), "a newly picked letter replaces the previous one");
+				game.root.remove();
+			});
+
+			await check("dwell places into the exact empty slot and stale slots cannot place twice", async () => {
+				const game = await mount(1);
+				const tile = game.tiles()[2];
+				await activate(tile);
+				const oldEmptySlot = game.slots()[2];
+				await oldEmptySlot.accessClick("dwell");
+				await oldEmptySlot.accessClick("dwell");
+				await settle();
+				const answer = game.progress.at(-1)?.answers["unit-1-cat"];
+				assert(JSON.stringify(answer?.selectedTileIds) === JSON.stringify([null, null, "unit-1-cat-tile-2"]), "letter is saved at its target slot");
+				assert(answer.attempts === 0 && answer.correctAttempts === 0, "partial placement does not count an attempt");
+				assert(!document.querySelector(".carried-letter-preview"), "successful placement clears the preview");
+				assert(game.progress.length === 1, "placement saves progress once");
+				await activate(oldEmptySlot);
+				assert(game.progress.length === 1, "a detached old slot cannot mutate progress");
+				game.root.remove();
+			});
+
+			await check("empty slots without a carried letter and occupied slots during a carry do nothing", async () => {
+				const game = await mount(1, {
+					"unit-1-cat": { selectedTileIds: [null, "unit-1-cat-tile-1", null], attempts: 0, correctAttempts: 0 },
+				});
+				await activate(game.slots()[0]);
+				assert(game.progress.length === 0, "an empty-slot dwell without a pickup does not save");
+				await activate(game.tiles()[0]);
+				await activate(game.slots()[1]);
+				assert(game.progress.length === 0, "carrying a letter cannot remove an occupied slot");
+				assert(game.root.querySelector(".carried-letter-preview"), "an occupied drop keeps the letter carried");
+				await activate(game.slots()[2]);
+				assert(JSON.stringify(game.progress.at(-1)?.answers["unit-1-cat"].selectedTileIds) === JSON.stringify([null, "unit-1-cat-tile-1", "unit-1-cat-tile-0"]), "the carried letter can be placed in the remaining empty slot");
+			});
+
+			await check("out-of-order placements complete the word exactly once", async () => {
+				const game = await mount(1);
+				for (const [value, slotIndex] of [["t", 2], ["c", 0], ["a", 1]]) {
+					const tile = game.tiles().find((candidate) =>
+						candidate.getAttribute("aria-label").startsWith(`Pick up ${value},`),
+					);
+					const slot = game.slots()[slotIndex];
+					assert(tile, `the unplaced ${value} letter remains available`);
+					await activate(tile);
+					await activate(slot);
+				}
+				const answer = game.progress.at(-1)?.answers["unit-1-cat"];
+				assert(JSON.stringify(answer?.selectedTileIds) === JSON.stringify(["unit-1-cat-tile-0", "unit-1-cat-tile-1", "unit-1-cat-tile-2"]), "saved slot order spells cat");
+				assert(answer.completed && answer.attempts === 1 && answer.correctAttempts === 1, "the completed correct answer increments one attempt");
+				assert(!game.clear().hasAttribute("i-disabled"), "Clear remains enabled for placed letters");
+				assert(!game.root.querySelector('[aria-label="Result"]').hasAttribute("i-disabled"), "correct completion enables progression");
+				assert(!game.root.querySelector('[aria-label="Speak"]').hasAttribute("i-disabled"), "correct completion enables speech");
+				game.root.remove();
+			});
+
+			await check("legacy answers restore from the left and removal preserves later slots", async () => {
+				const legacy = await mount(1, {
+					"unit-1-cat": { selectedTileIds: ["unit-1-cat-tile-0"], attempts: 2, correctAttempts: 1 },
+				});
+				assert(legacy.slots()[0].classList.contains("filled"), "legacy first letter stays in slot one");
+				assert(!legacy.slots()[1].classList.contains("filled"), "legacy short answers do not shift into later slots");
+				assert(legacy.status().textContent === "1 of 3 slots filled", "feedback counts placed letters, not array length");
+				legacy.root.remove();
+
+				const gapped = await mount(1, {
+					"unit-1-cat": { selectedTileIds: [null, "unit-1-cat-tile-1", "unit-1-cat-tile-2"], attempts: 0, correctAttempts: 0 },
+				});
+				await activate(gapped.slots()[1]);
+				assert(JSON.stringify(gapped.progress.at(-1)?.answers["unit-1-cat"].selectedTileIds) === JSON.stringify([null, null, "unit-1-cat-tile-2"]), "removing a placed letter leaves later letters in their original slots");
+				await activate(gapped.tiles()[0]);
+				await activate(gapped.slots()[0]);
+				await activate(gapped.slots()[0]);
+				assert(gapped.status().textContent === "1 of 3 slots filled", "removing a letter clears the previous placement announcement");
+				gapped.root.remove();
+			});
+
+			await check("repeated letters keep distinct tile identities and keyboard can place", async () => {
+				const game = await mount(2);
+				const tiles = game.tiles();
+				await activate(tiles[1]);
+				const slot = game.slots()[1];
+				assert(slot.getAttribute("role") === "button" && slot.tabIndex === 0, "empty slot is an accessible keyboard target");
+				assert(slot.getAttribute("aria-label") === "Empty letter slot 2", "empty slot has an indexed accessible name");
+				slot.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+				await settle();
+				assert(JSON.stringify(game.progress.at(-1)?.answers["unit-2-llp"]?.selectedTileIds) === JSON.stringify([null, "unit-2-llp-tile-1", null]), "keyboard placement preserves the selected duplicate letter ID");
+				assert(game.status().getAttribute("aria-live") === "polite", "pickup and placement feedback has a polite live region");
+				game.root.remove();
+			});
+
+			await check("Escape cancels without saving and bad coordinates do not move the preview", async () => {
+				const game = await mount(1);
+				window.XPos = Number.NaN;
+				window.YPos = Number.POSITIVE_INFINITY;
+				await activate(game.tiles()[0]);
+				await nextFrame();
+				const preview = document.querySelector(".carried-letter-preview");
+				assert(preview?.hidden, "invalid coordinates hide the preview");
+				document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+				assert(!document.querySelector(".carried-letter-preview"), "Escape removes the preview");
+				assert(!game.tiles()[0].hasAttribute("selected"), "Escape releases the carried letter");
+				assert(game.progress.length === 0, "canceling pickup does not save progress");
+				await activate(game.tiles()[0]);
+				await nextFrame();
+				game.slots()[0].dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+				await settle();
+				assert(game.progress.at(-1)?.answers["unit-1-cat"]?.selectedTileIds[0] === "unit-1-cat-tile-0", "keyboard placement still works without valid cursor coordinates");
+			});
+
+			await check("Clear and source disconnection clean up the carried preview", async () => {
+				const game = await mount(1);
+				await activate(game.tiles()[0]);
+				assert(!game.clear().hasAttribute("i-disabled"), "Clear remains available while carrying");
+				await activate(game.clear());
+				assert(!game.root.querySelector(".carried-letter-preview"), "Clear removes this game's preview");
+				assert(game.progress.at(-1)?.answers["unit-1-cat"] === undefined, "clear does not persist an unplaced pickup");
+				await activate(game.tiles()[1]);
+				game.tiles()[1].remove();
+				assert(!document.querySelector(".carried-letter-preview"), "disconnecting a selected source cancels its carry");
+
+				const cleared = await mount(1, {
+					"unit-1-cat": {
+						selectedTileIds: ["unit-1-cat-tile-0", "unit-1-cat-tile-1", "unit-1-cat-tile-2"],
+						attempts: 2,
+						correctAttempts: 1,
+					},
+				});
+				await activate(cleared.clear());
+				const answer = cleared.progress.at(-1)?.answers["unit-1-cat"];
+				assert(JSON.stringify(answer?.selectedTileIds) === JSON.stringify([null, null, null]), "Clear empties every slot");
+				assert(answer.attempts === 2 && answer.correctAttempts === 1, "Clear preserves attempt totals");
+				game.root.remove();
+			});
+
+			await check("mouse click remains a pickup and placement alternative", async () => {
+				const game = await mount(1);
+				game.tiles()[0].click();
+				await settle();
+				assert(game.tiles()[0].hasAttribute("selected"), "click picks up a bank letter");
+				game.slots()[0].click();
+				await settle();
+				assert(game.progress.at(-1)?.answers["unit-1-cat"]?.selectedTileIds[0] === "unit-1-cat-tile-0", "click places the carried letter");
+			});
+
+			await check("view replacement cancels carry and rejects stale slots", async () => {
+				let canRender = true;
+				const game = await mount(1, {}, () => canRender);
+				const tile = game.tiles()[0];
+				const slot = game.slots()[0];
+				await activate(tile);
+				canRender = false;
+				await nextFrame();
+				assert(!game.root.querySelector(".carried-letter-preview"), "stale game stops its carry frame");
+				assert(!tile.hasAttribute("selected"), "stale game releases the source tile");
+				await activate(slot);
+				assert(game.progress.length === 0, "a replaced game cannot save a stale slot activation");
+			});
+
+			const summary = document.createElement("p");
+			summary.textContent = `${passed} checks passed, ${failed} failed.`;
+			summary.className = failed ? "fail" : "pass";
+			results.after(summary);
+			if (failed) throw new Error(summary.textContent);
+		</script>
+	</body>
+</html>

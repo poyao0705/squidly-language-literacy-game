@@ -5,8 +5,10 @@ import {
 	GridIcon,
 	GridIconSymbol,
 	GridLayout,
+	getCursorPosition,
 	SvgPlus,
 } from "../squidly-utils";
+import { normalizeSlotTileIds, placeTileInSlot } from "./word-building-slots";
 
 class GameButton extends GridIcon {
 	constructor(info = {}, group) {
@@ -257,6 +259,8 @@ export class WordBuildingGame {
 	#viewState;
 	#startedAt;
 	#completedAt;
+	#carriedTile = null;
+	#feedbackMessage = "";
 	#canRender;
 	#onGameStateChange;
 	#onGoHome;
@@ -353,7 +357,7 @@ export class WordBuildingGame {
 	#getQuestionState(question) {
 		if (!this.#questionState.has(question.id)) {
 			this.#questionState.set(question.id, {
-				selectedTileIds: [],
+				selectedTileIds: Array(question.answerParts.length).fill(null),
 				completed: false,
 				incorrect: false,
 				attempts: 0,
@@ -398,10 +402,10 @@ export class WordBuildingGame {
 			const rawAnswer = answers[question.id];
 			if (!rawAnswer || typeof rawAnswer !== "object") continue;
 
-			const tileIds = new Set(question.tiles.map((tile) => tile.id));
-			const selectedTileIds = Array.isArray(rawAnswer.selectedTileIds)
-				? rawAnswer.selectedTileIds.filter((tileId) => tileIds.has(tileId))
-				: [];
+			const selectedTileIds = normalizeSlotTileIds(
+				question,
+				rawAnswer.selectedTileIds,
+			);
 			const state = {
 				selectedTileIds,
 				completed: false,
@@ -435,7 +439,7 @@ export class WordBuildingGame {
 			const correctAttempts = normalizeCount(state.correctAttempts);
 
 			if (
-				state.selectedTileIds.length === 0 &&
+				this.#getSelectedTiles(question, state).length === 0 &&
 				!state.completed &&
 				!state.incorrect &&
 				attempts === 0 &&
@@ -535,7 +539,13 @@ export class WordBuildingGame {
 				disabled,
 				events: {
 					"access-click": (event) => {
-						if (button.disabled || !onClick) return;
+						if (
+							button.disabled ||
+							!button.isConnected ||
+							!this.#canRender() ||
+							!onClick
+						)
+							return;
 						onClick(event);
 					},
 				},
@@ -559,6 +569,7 @@ export class WordBuildingGame {
 	}
 
 	#renderQuestion() {
+		this.#cancelCarry();
 		if (this.#questions.length === 0) {
 			this.#renderEmpty();
 			return;
@@ -605,6 +616,7 @@ export class WordBuildingGame {
 	}
 
 	#renderResult() {
+		this.#cancelCarry();
 		const main = document.createElement("main");
 		main.className = "game-shell word-building-shell";
 		main.append(this.#createResultLayout());
@@ -859,9 +871,12 @@ export class WordBuildingGame {
 				theme: "language-tile",
 				group: "word-building-letters",
 				order: index,
-				onClick: () => this.#toggleTile(question, tile.id),
+				onClick: () => this.#pickUpTile(question, tile.id, tileButton),
 			});
-			tileButton.setAttribute("aria-label", `Spell ${tile.value}`);
+			tileButton.setAttribute(
+				"aria-label",
+				`Pick up ${tile.value}, choice ${index + 1}`,
+			);
 			letterBank.append(tileButton);
 		});
 
@@ -869,37 +884,59 @@ export class WordBuildingGame {
 	}
 
 	#createAnswerSlots(question, state) {
-		const selectedTiles = this.#getSelectedTiles(question, state);
 		const slots = createElement("div", "answer-slots");
 
 		for (let index = 0; index < question.answerParts.length; index += 1) {
-			const selectedTile = selectedTiles[index];
+			let placedInThisSlot = false;
+			const selectedTileId = state.selectedTileIds[index];
+			const selectedTile = question.tiles.find(
+				(tile) => tile.id === selectedTileId,
+			);
 			const slot = document.createElement("access-button");
 			slot.className = "answer-slot";
 			slot.setAttribute("access-group", "word-building-slots");
 			slot.setAttribute("access-order", String(index));
+			slot.setAttribute("role", "button");
 			slot.setAttribute(
 				"aria-label",
-				selectedTile ? `Remove ${selectedTile.value}` : "Empty letter slot",
+				selectedTile
+					? `Remove ${selectedTile.value} from slot ${index + 1}`
+					: `Empty letter slot ${index + 1}`,
 			);
-			slot.tabIndex = selectedTile ? 0 : -1;
+			slot.tabIndex = 0;
 
 			if (selectedTile) {
 				slot.classList.add("filled");
 				slot.textContent = selectedTile.value;
-				slot.addEventListener("access-click", () =>
-					this.#removeTileAt(question, index),
-				);
-				slot.addEventListener("keydown", (event) => {
-					if (event.key !== "Enter" && event.key !== " ") return;
-					event.preventDefault();
-					slot.click();
-				});
 			} else {
 				const line = createElement("span", "answer-slot-line");
 				line.setAttribute("aria-hidden", "true");
 				slot.append(line);
 			}
+
+			slot.addEventListener("access-click", () => {
+				if (
+					placedInThisSlot ||
+					!slot.isConnected ||
+					!this.#canInteractWithQuestion(question)
+				)
+					return;
+
+				const currentTileId =
+					this.#getQuestionState(question).selectedTileIds[index];
+				if (currentTileId === null) {
+					placedInThisSlot = this.#placeCarriedTile(question, index, slot);
+				} else if (!this.#carriedTile) {
+					this.#removeTileAt(question, index, slot);
+				}
+			});
+			slot.addEventListener("keydown", (event) => {
+				if (event.key !== "Enter" && event.key !== " ") return;
+				event.preventDefault();
+				if (!slot.isConnected || !this.#canInteractWithQuestion(question))
+					return;
+				slot.click();
+			});
 
 			slots.append(slot);
 		}
@@ -909,8 +946,11 @@ export class WordBuildingGame {
 
 	#createFeedback(question, state) {
 		const feedback = createElement("p", "word-feedback");
-		const selectedCount = state.selectedTileIds.length;
+		const selectedCount = this.#getSelectedTiles(question, state).length;
 		const totalCount = question.answerParts.length;
+		feedback.setAttribute("role", "status");
+		feedback.setAttribute("aria-live", "polite");
+		feedback.setAttribute("aria-atomic", "true");
 
 		if (state.completed) {
 			feedback.textContent = "Great job!";
@@ -919,7 +959,9 @@ export class WordBuildingGame {
 			feedback.textContent = "Not quite. Try again.";
 			feedback.classList.add("error");
 		} else {
-			feedback.textContent = `${selectedCount} of ${totalCount} slots filled`;
+			feedback.textContent =
+				this.#feedbackMessage ||
+				`${selectedCount} of ${totalCount} slots filled`;
 		}
 
 		return feedback;
@@ -954,7 +996,9 @@ export class WordBuildingGame {
 				className: "nav-button",
 				group: "word-building-navigation",
 				order: 2,
-				disabled: state.selectedTileIds.length === 0,
+				disabled:
+					this.#getSelectedTiles(question, state).length === 0 &&
+					this.#carriedTile?.question !== question,
 				onClick: () => this.#clearQuestion(question),
 			}),
 			next: this.#createButton({
@@ -976,38 +1020,186 @@ export class WordBuildingGame {
 				className: "nav-button",
 				group: "word-building-navigation",
 				order: 4,
-				disabled: state.selectedTileIds.length !== question.answerParts.length,
+				disabled:
+					this.#getSelectedTiles(question, state).length !==
+					question.answerParts.length,
 				onClick: () => this.#speakSpelledWord(question, state),
 			}),
 		};
 	}
 
-	#toggleTile(question, tileId) {
-		const state = this.#getQuestionState(question);
-		const selectedIndex = state.selectedTileIds.indexOf(tileId);
-
-		if (selectedIndex >= 0) {
-			state.selectedTileIds.splice(selectedIndex, 1);
-		} else if (state.selectedTileIds.length < question.answerParts.length) {
-			state.selectedTileIds.push(tileId);
-		}
-
-		this.#updateAnswerState(question, state, { countAttempt: true });
-		this.#commitGameState();
-		this.#renderQuestion();
+	#canInteractWithQuestion(question) {
+		return (
+			this.#viewState === GAME_VIEWS.PLAY &&
+			this.#currentQuestion() === question &&
+			this.#canRender()
+		);
 	}
 
-	#removeTileAt(question, index) {
+	#announce(message) {
+		this.#feedbackMessage = message;
+		const feedback = this.rootElement.querySelector(".word-feedback");
+		if (feedback) feedback.textContent = message;
+	}
+
+	#pickUpTile(question, tileId, sourceButton) {
+		if (!sourceButton.isConnected || !this.#canInteractWithQuestion(question))
+			return;
+		if (this.#getQuestionState(question).selectedTileIds.includes(tileId))
+			return;
+		if (this.#carriedTile?.sourceButton === sourceButton) return;
+
+		this.#cancelCarry();
+		const tile = question.tiles.find((candidate) => candidate.id === tileId);
+		if (!tile) return;
+
+		const preview = createElement("div", "carried-letter-preview", tile.value);
+		preview.setAttribute("aria-hidden", "true");
+		preview.style.pointerEvents = "none";
+		preview.hidden = true;
+
+		const carriedTile = {
+			question,
+			tileId,
+			sourceButton,
+			preview,
+			frameId: null,
+			previousOnDisconnect: sourceButton.ondisconnect,
+			onDisconnect: null,
+			onKeyDown: null,
+		};
+		carriedTile.onDisconnect = () => {
+			if (carriedTile.previousOnDisconnect instanceof Function) {
+				carriedTile.previousOnDisconnect.call(sourceButton);
+			}
+			if (this.#carriedTile === carriedTile) this.#cancelCarry();
+		};
+		carriedTile.onKeyDown = (event) => {
+			if (event.key !== "Escape" || this.#carriedTile !== carriedTile) return;
+			event.preventDefault();
+			this.#cancelCarry();
+			this.#announce("Selection cancelled.");
+		};
+
+		this.#carriedTile = carriedTile;
+		sourceButton.selected = true;
+		sourceButton.ondisconnect = carriedTile.onDisconnect;
+		const clearButton = this.rootElement.querySelector('[aria-label="Clear"]');
+		if (clearButton) clearButton.disabled = false;
+		this.rootElement.append(preview);
+		document.addEventListener("keydown", carriedTile.onKeyDown);
+		this.#announce(
+			`Selected ${tile.value}. Dwell on an empty slot to place it.`,
+		);
+		carriedTile.frameId = window.requestAnimationFrame(() =>
+			this.#updateCarriedPreview(carriedTile),
+		);
+	}
+
+	#updateCarriedPreview(carriedTile) {
+		if (this.#carriedTile !== carriedTile) return;
+		if (
+			!carriedTile.sourceButton.isConnected ||
+			!this.#canInteractWithQuestion(carriedTile.question)
+		) {
+			this.#cancelCarry();
+			return;
+		}
+
+		const position = getCursorPosition();
+		if (Number.isFinite(position?.x) && Number.isFinite(position?.y)) {
+			carriedTile.preview.hidden = false;
+			carriedTile.preview.style.transform = `translate3d(${position.x}px, ${position.y}px, 0)`;
+		} else {
+			carriedTile.preview.hidden = true;
+		}
+
+		carriedTile.frameId = window.requestAnimationFrame(() =>
+			this.#updateCarriedPreview(carriedTile),
+		);
+	}
+
+	#cancelCarry() {
+		const carriedTile = this.#carriedTile;
+		if (!carriedTile) return;
+
+		this.#carriedTile = null;
+		if (carriedTile.frameId !== null) {
+			window.cancelAnimationFrame(carriedTile.frameId);
+		}
+		document.removeEventListener("keydown", carriedTile.onKeyDown);
+		carriedTile.sourceButton.selected = false;
+		if (carriedTile.sourceButton.ondisconnect === carriedTile.onDisconnect) {
+			carriedTile.sourceButton.ondisconnect = carriedTile.previousOnDisconnect;
+		}
+		if (
+			this.#getSelectedTiles(
+				carriedTile.question,
+				this.#getQuestionState(carriedTile.question),
+			).length === 0
+		) {
+			const clearButton = this.rootElement.querySelector(
+				'[aria-label="Clear"]',
+			);
+			if (clearButton) clearButton.disabled = true;
+		}
+		carriedTile.preview.remove();
+	}
+
+	#placeCarriedTile(question, slotIndex, slot) {
+		const carriedTile = this.#carriedTile;
+		if (
+			!carriedTile ||
+			carriedTile.question !== question ||
+			!slot.isConnected ||
+			!this.#canInteractWithQuestion(question)
+		)
+			return;
+
 		const state = this.#getQuestionState(question);
-		state.selectedTileIds.splice(index, 1);
+		const selectedTileIds = placeTileInSlot(
+			question,
+			state.selectedTileIds,
+			carriedTile.tileId,
+			slotIndex,
+		);
+		if (!selectedTileIds) return;
+
+		const tile = question.tiles.find(
+			(candidate) => candidate.id === carriedTile.tileId,
+		);
+		this.#cancelCarry();
+		state.selectedTileIds = selectedTileIds;
+		this.#updateAnswerState(question, state, { countAttempt: true });
+		this.#announce(`Placed ${tile.value} in slot ${slotIndex + 1}.`);
+		this.#commitGameState();
+		this.#renderQuestion();
+		return true;
+	}
+
+	#removeTileAt(question, index, slot) {
+		if (
+			!slot.isConnected ||
+			!this.#canInteractWithQuestion(question) ||
+			this.#carriedTile
+		)
+			return;
+
+		const state = this.#getQuestionState(question);
+		this.#feedbackMessage = "";
+		state.selectedTileIds[index] = null;
 		this.#updateAnswerState(question, state);
 		this.#commitGameState();
 		this.#renderQuestion();
 	}
 
 	#clearQuestion(question) {
+		if (!this.#canInteractWithQuestion(question)) return;
+
+		this.#cancelCarry();
+		this.#announce("Answer cleared.");
 		const state = this.#getQuestionState(question);
-		state.selectedTileIds = [];
+		state.selectedTileIds = Array(question.answerParts.length).fill(null);
 		state.completed = false;
 		state.incorrect = false;
 		this.#commitGameState();
@@ -1020,11 +1212,10 @@ export class WordBuildingGame {
 		state.attempts = normalizeCount(state.attempts);
 		state.correctAttempts = normalizeCount(state.correctAttempts);
 
-		if (state.selectedTileIds.length !== question.answerParts.length) return;
+		const selectedTiles = this.#getSelectedTiles(question, state);
+		if (selectedTiles.length !== question.answerParts.length) return;
 
-		const selectedWord = this.#getSelectedTiles(question, state)
-			.map((tile) => tile.value)
-			.join("");
+		const selectedWord = selectedTiles.map((tile) => tile.value).join("");
 		const targetWord = question.answerParts.join("");
 
 		state.completed = selectedWord === targetWord;
@@ -1039,6 +1230,8 @@ export class WordBuildingGame {
 	}
 
 	#moveQuestion(step) {
+		this.#cancelCarry();
+		this.#feedbackMessage = "";
 		const nextIndex = this.#questionIndex + step;
 		this.#questionIndex = Math.max(
 			0,
@@ -1051,6 +1244,7 @@ export class WordBuildingGame {
 	#showResult() {
 		if (!this.#allQuestionsCompleted()) return;
 
+		this.#cancelCarry();
 		this.#syncCompletionState();
 		this.#viewState = GAME_VIEWS.RESULT;
 		this.#commitGameState();
@@ -1058,6 +1252,8 @@ export class WordBuildingGame {
 	}
 
 	#restart() {
+		this.#cancelCarry();
+		this.#feedbackMessage = "";
 		this.#questionIndex = 0;
 		this.#questionState.clear();
 		this.#viewState = GAME_VIEWS.PLAY;
@@ -1068,6 +1264,7 @@ export class WordBuildingGame {
 	}
 
 	#goHome() {
+		this.#cancelCarry();
 		if (this.#onGoHome) {
 			this.#onGoHome();
 			return;
@@ -1093,7 +1290,11 @@ export class WordBuildingGame {
 	}
 
 	#speakSpelledWord(question, state) {
-		if (state.selectedTileIds.length !== question.answerParts.length) return;
+		if (
+			this.#getSelectedTiles(question, state).length !==
+			question.answerParts.length
+		)
+			return;
 		this.#speakText(this.#getSelectedWord(question, state), true);
 	}
 
