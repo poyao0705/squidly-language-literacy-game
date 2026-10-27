@@ -1,0 +1,284 @@
+{
+  "title": "Word-bank image sources",
+  "mulberry": {
+    "name": "Mulberry Symbols",
+    "author": "Steve Lee",
+    "copyright": "2018–2026 Steve Lee",
+    "version": "3.6.1",
+    "url": "https://mulberrysymbols.org/",
+    "download": "https://github.com/mulberrysymbols/mulberry-symbols/releases/latest/download/mulberry-symbols.zip",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "changes": "SVG files copied unchanged and renamed for the target words."
+  },
+  "generated": {
+    "tool": "built-in image_gen",
+    "date": "2026-10-12",
+    "prompts": "generation-prompts.json",
+    "delivery": "JPEG files resized to 512×512 for the game; white background; no spelling labels."
+  },
+  "notes": "Portraits identify invented characters through the game's spoken word cue. Function words use illustrative cues rather than a unique literal object. The lad picture reuses the Sam boy portrait.",
+  "images": [
+    {
+      "word": "Sam",
+      "unit": 1,
+      "file": "sam.jpg",
+      "meaning": "invented character named Sam",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "Tim",
+      "unit": 1,
+      "file": "tim.jpg",
+      "meaning": "invented character named Tim",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "Tam",
+      "unit": 1,
+      "file": "tam.jpg",
+      "meaning": "invented character named Tam",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "it",
+      "unit": 1,
+      "file": "it.jpg",
+      "meaning": "pointing to an object",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "am",
+      "unit": 1,
+      "file": "am.jpg",
+      "meaning": "I am; self-identification",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "nip",
+      "unit": 2,
+      "file": "nip.jpg",
+      "meaning": "a small pinch",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "sin",
+      "unit": 2,
+      "file": "sin.jpg",
+      "meaning": "doing something wrong",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "tan",
+      "unit": 2,
+      "file": "tan.jpg",
+      "meaning": "suntan",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "tot",
+      "unit": 2,
+      "file": "tot.jpg",
+      "meaning": "toddler",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "is",
+      "unit": 2,
+      "file": "is.jpg",
+      "meaning": "identity; linking verb",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "a",
+      "unit": 2,
+      "file": "a.jpg",
+      "meaning": "one indefinite object",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "gob",
+      "unit": 3,
+      "file": "gob.svg",
+      "meaning": "mouth",
+      "source": "Mulberry Symbols",
+      "originalFile": "mouth.svg"
+    },
+    {
+      "word": "hag",
+      "unit": 3,
+      "file": "hag.svg",
+      "meaning": "storybook witch",
+      "source": "Mulberry Symbols",
+      "originalFile": "witch.svg"
+    },
+    {
+      "word": "mac",
+      "unit": 3,
+      "file": "mac.svg",
+      "meaning": "raincoat",
+      "source": "Mulberry Symbols",
+      "originalFile": "raincoat.svg"
+    },
+    {
+      "word": "mob",
+      "unit": 3,
+      "file": "mob.jpg",
+      "meaning": "crowd",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "nag",
+      "unit": 3,
+      "file": "nag.svg",
+      "meaning": "horse",
+      "source": "Mulberry Symbols",
+      "originalFile": "horse.svg"
+    },
+    {
+      "word": "sag",
+      "unit": 3,
+      "file": "sag.jpg",
+      "meaning": "drooping line",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "sob",
+      "unit": 3,
+      "file": "sob.jpg",
+      "meaning": "crying with tears",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "tab",
+      "unit": 3,
+      "file": "tab.jpg",
+      "meaning": "folder index tab",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "bop",
+      "unit": 3,
+      "file": "bop.svg",
+      "meaning": "dance to music",
+      "source": "Mulberry Symbols",
+      "originalFile": "dance_,_to.svg"
+    },
+    {
+      "word": "if",
+      "unit": 4,
+      "file": "if.jpg",
+      "meaning": "conditional rain-to-umbrella cue",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "Meg",
+      "unit": 4,
+      "file": "meg.jpg",
+      "meaning": "invented character named Meg",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "men",
+      "unit": 4,
+      "file": "men.jpg",
+      "meaning": "group of adult men",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "met",
+      "unit": 4,
+      "file": "met.svg",
+      "meaning": "people meeting",
+      "source": "Mulberry Symbols",
+      "originalFile": "meet_,_to.svg"
+    },
+    {
+      "word": "mid",
+      "unit": 4,
+      "file": "mid.svg",
+      "meaning": "middle position",
+      "source": "Mulberry Symbols",
+      "originalFile": "middle.svg"
+    },
+    {
+      "word": "Ned",
+      "unit": 4,
+      "file": "ned.jpg",
+      "meaning": "invented character named Ned",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "tad",
+      "unit": 4,
+      "file": "tad.svg",
+      "meaning": "a small amount",
+      "source": "Mulberry Symbols",
+      "originalFile": "little.svg"
+    },
+    {
+      "word": "Ted",
+      "unit": 4,
+      "file": "ted.jpg",
+      "meaning": "invented character named Ted",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "Tod",
+      "unit": 4,
+      "file": "tod.jpg",
+      "meaning": "invented character named Tod",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "vac",
+      "unit": 4,
+      "file": "vac.svg",
+      "meaning": "vacuum cleaner",
+      "source": "Mulberry Symbols",
+      "originalFile": "vacuum_cleaner_1.svg"
+    },
+    {
+      "word": "vat",
+      "unit": 4,
+      "file": "vat.jpg",
+      "meaning": "large open liquid container",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "dud",
+      "unit": 5,
+      "file": "dud.jpg",
+      "meaning": "broken toy that does not work",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "fug",
+      "unit": 5,
+      "file": "fug.jpg",
+      "meaning": "stuffy stale air",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "hub",
+      "unit": 5,
+      "file": "hub.jpg",
+      "meaning": "center of a wheel",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "hum",
+      "unit": 5,
+      "file": "hum.jpg",
+      "meaning": "humming with closed lips",
+      "source": "built-in image_gen"
+    },
+    {
+      "word": "lad",
+      "unit": 5,
+      "file": "lad.jpg",
+      "meaning": "young boy",
+      "source": "Reused generated Sam portrait"
+    }
+  ]
+}
