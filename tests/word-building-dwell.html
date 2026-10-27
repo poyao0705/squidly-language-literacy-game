@@ -151,14 +151,31 @@
 				await settle();
 			}
 
+			await check("prompt has no left accent and helper instructions are absent", async () => {
+				const game = await mount(1);
+				const title = game.root.querySelector(".game-title-block");
+				assert(Number.parseFloat(getComputedStyle(title).borderLeftWidth) === 0, "title has no yellow left border");
+				assert(game.root.querySelector("#word-builder-prompt").textContent === "Build cat.", "question prompt remains visible");
+				for (const pickingUp of [false, true]) {
+					if (pickingUp) await activate(game.tiles()[0]);
+					assert(game.status() === null, "helper instructions are not created, even while carrying");
+				}
+				await activate(game.slots()[0]);
+				assert(game.status() === null, "partial placement creates no helper message");
+				await activate(game.clear());
+				assert(game.status() === null, "Clear creates no helper message");
+			});
+
 			await check("pickup is transient and the preview follows cursor coordinates", async () => {
 				const cursor = { user: "host-mouse", source: "local", x: 31, y: 52 };
 				const game = await mount(1, {}, { getCursorSample: () => cursor });
 				const [first, second] = game.tiles();
+				assert(first.getAttribute("aria-pressed") === "false", "available letter exposes its unselected state");
 				await activate(first);
 				await nextFrame();
 				const preview = document.querySelector(".carried-letter-preview");
 				assert(first.hasAttribute("selected"), "picked-up source is selected");
+				assert(first.getAttribute("aria-pressed") === "true", "selection remains accessible without helper text");
 				assert(preview?.getAttribute("aria-hidden") === "true", "preview is non-accessible decoration");
 				assert(preview.style.pointerEvents === "none", "preview cannot block slot targeting");
 				assert(!preview.hasAttribute("access-group"), "preview stays outside access-button groups");
@@ -223,10 +240,23 @@
 				const answer = game.progress.at(-1)?.answers["unit-1-cat"];
 				assert(JSON.stringify(answer?.selectedTileIds) === JSON.stringify(["unit-1-cat-tile-0", "unit-1-cat-tile-1", "unit-1-cat-tile-2"]), "saved slot order spells cat");
 				assert(answer.completed && answer.attempts === 1 && answer.correctAttempts === 1, "the completed correct answer increments one attempt");
+				assert(game.status().getBoundingClientRect().height > 1, "correct-answer feedback remains visible");
 				assert(!game.clear().hasAttribute("i-disabled"), "Clear remains enabled for placed letters");
 				assert(!game.root.querySelector('[aria-label="Result"]').hasAttribute("i-disabled"), "correct completion enables progression");
 				assert(!game.root.querySelector('[aria-label="Speak"]').hasAttribute("i-disabled"), "correct completion enables speech");
 				game.root.remove();
+			});
+
+			await check("incorrect-answer feedback remains visible and accessible", async () => {
+				const game = await mount(1);
+				for (const [value, slotIndex] of [["t", 0], ["a", 1], ["c", 2]]) {
+					const tile = game.tiles().find((candidate) => candidate.getAttribute("aria-label").startsWith(`Pick up ${value},`));
+					await activate(tile);
+					await activate(game.slots()[slotIndex]);
+				}
+				assert(game.status()?.classList.contains("error"), "incorrect answer keeps error feedback");
+				assert(game.status().getBoundingClientRect().height > 1, "incorrect-answer feedback remains visible");
+				assert(game.status().getAttribute("aria-live") === "polite", "answer feedback remains announced");
 			});
 
 			await check("legacy answers restore from the left and removal preserves later slots", async () => {
@@ -235,7 +265,7 @@
 				});
 				assert(legacy.slots()[0].classList.contains("filled"), "legacy first letter stays in slot one");
 				assert(!legacy.slots()[1].classList.contains("filled"), "legacy short answers do not shift into later slots");
-				assert(legacy.status().textContent === "1 of 3 slots filled", "feedback counts placed letters, not array length");
+				assert(legacy.status() === null, "restored partial answers create no helper message");
 				legacy.root.remove();
 
 				const gapped = await mount(1, {
@@ -246,7 +276,7 @@
 				await activate(gapped.tiles()[0]);
 				await activate(gapped.slots()[0]);
 				await activate(gapped.slots()[0]);
-				assert(gapped.status().textContent === "1 of 3 slots filled", "removing a letter clears the previous placement announcement");
+				assert(gapped.status() === null, "removing a letter creates no helper message");
 				gapped.root.remove();
 			});
 
@@ -260,7 +290,7 @@
 				slot.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
 				await settle();
 				assert(JSON.stringify(game.progress.at(-1)?.answers["unit-2-llp"]?.selectedTileIds) === JSON.stringify([null, "unit-2-llp-tile-1", null]), "keyboard placement preserves the selected duplicate letter ID");
-				assert(game.status().getAttribute("aria-live") === "polite", "pickup and placement feedback has a polite live region");
+				assert(game.status() === null, "keyboard placement creates no helper message");
 				game.root.remove();
 			});
 
@@ -279,6 +309,7 @@
 				document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
 				assert(!document.querySelector(".carried-letter-preview"), "Escape removes the preview");
 				assert(!game.tiles()[0].hasAttribute("selected"), "Escape releases the carried letter");
+				assert(game.tiles()[0].getAttribute("aria-pressed") === "false", "Escape resets the accessible selection state");
 				assert(game.progress.length === 0, "canceling pickup does not save progress");
 				await activate(game.tiles()[0]);
 				await nextFrame();

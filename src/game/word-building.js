@@ -26,6 +26,7 @@ class GameButton extends GridIcon {
 
 	set selected(value) {
 		this.toggleAttribute("selected", Boolean(value));
+		this.setAttribute("aria-pressed", String(Boolean(value)));
 	}
 
 	get selected() {
@@ -259,7 +260,6 @@ export class WordBuildingGame {
 	#startedAt;
 	#completedAt;
 	#carriedTile = null;
-	#feedbackMessage = "";
 	#canRender;
 	#onGameStateChange;
 	#onGoHome;
@@ -801,7 +801,10 @@ export class WordBuildingGame {
 
 		const prompt = createElement("p", "word-prompt", question.prompt);
 		prompt.id = "word-builder-prompt";
-		titleText.append(prompt, this.#createFeedback(question, state));
+		titleText.append(prompt);
+		if (state.completed || state.incorrect) {
+			titleText.append(this.#createFeedback(state));
+		}
 
 		titleBlock.append(titleText);
 		return titleBlock;
@@ -880,6 +883,7 @@ export class WordBuildingGame {
 				"aria-label",
 				`Pick up ${tile.value}, choice ${index + 1}`,
 			);
+			tileButton.selected = false;
 			letterBank.append(tileButton);
 		});
 
@@ -947,10 +951,8 @@ export class WordBuildingGame {
 		return slots;
 	}
 
-	#createFeedback(question, state) {
+	#createFeedback(state) {
 		const feedback = createElement("p", "word-feedback");
-		const selectedCount = this.#getSelectedTiles(question, state).length;
-		const totalCount = question.answerParts.length;
 		feedback.setAttribute("role", "status");
 		feedback.setAttribute("aria-live", "polite");
 		feedback.setAttribute("aria-atomic", "true");
@@ -958,13 +960,9 @@ export class WordBuildingGame {
 		if (state.completed) {
 			feedback.textContent = "Great job!";
 			feedback.classList.add("success");
-		} else if (state.incorrect) {
+		} else {
 			feedback.textContent = "Not quite. Try again.";
 			feedback.classList.add("error");
-		} else {
-			feedback.textContent =
-				this.#feedbackMessage ||
-				`${selectedCount} of ${totalCount} slots filled`;
 		}
 
 		return feedback;
@@ -1039,12 +1037,6 @@ export class WordBuildingGame {
 		);
 	}
 
-	#announce(message) {
-		this.#feedbackMessage = message;
-		const feedback = this.rootElement.querySelector(".word-feedback");
-		if (feedback) feedback.textContent = message;
-	}
-
 	#pickUpTile(question, tileId, sourceButton) {
 		if (!sourceButton.isConnected || !this.#canInteractWithQuestion(question))
 			return;
@@ -1088,7 +1080,6 @@ export class WordBuildingGame {
 			if (event.key !== "Escape" || this.#carriedTile !== carriedTile) return;
 			event.preventDefault();
 			this.#cancelCarry();
-			this.#announce("Selection cancelled.");
 		};
 
 		this.#carriedTile = carriedTile;
@@ -1098,9 +1089,6 @@ export class WordBuildingGame {
 		if (clearButton) clearButton.disabled = false;
 		this.rootElement.append(preview);
 		document.addEventListener("keydown", carriedTile.onKeyDown);
-		this.#announce(
-			`Selected ${tile.value}. Dwell on an empty slot to place it.`,
-		);
 		this.#updateCarriedPreview(carriedTile);
 	}
 
@@ -1177,13 +1165,9 @@ export class WordBuildingGame {
 		);
 		if (!selectedTileIds) return;
 
-		const tile = question.tiles.find(
-			(candidate) => candidate.id === carriedTile.tileId,
-		);
 		this.#cancelCarry();
 		state.selectedTileIds = selectedTileIds;
 		this.#updateAnswerState(question, state, { countAttempt: true });
-		this.#announce(`Placed ${tile.value} in slot ${slotIndex + 1}.`);
 		this.#commitGameState();
 		this.#renderQuestion();
 		return true;
@@ -1198,7 +1182,6 @@ export class WordBuildingGame {
 			return;
 
 		const state = this.#getQuestionState(question);
-		this.#feedbackMessage = "";
 		state.selectedTileIds[index] = null;
 		this.#updateAnswerState(question, state);
 		this.#commitGameState();
@@ -1209,7 +1192,6 @@ export class WordBuildingGame {
 		if (!this.#canInteractWithQuestion(question)) return;
 
 		this.#cancelCarry();
-		this.#announce("Answer cleared.");
 		const state = this.#getQuestionState(question);
 		state.selectedTileIds = Array(question.answerParts.length).fill(null);
 		state.completed = false;
@@ -1243,7 +1225,6 @@ export class WordBuildingGame {
 
 	#moveQuestion(step) {
 		this.#cancelCarry();
-		this.#feedbackMessage = "";
 		const nextIndex = this.#questionIndex + step;
 		this.#questionIndex = Math.max(
 			0,
@@ -1265,7 +1246,6 @@ export class WordBuildingGame {
 
 	#restart() {
 		this.#cancelCarry();
-		this.#feedbackMessage = "";
 		this.#questionIndex = 0;
 		this.#questionState.clear();
 		this.#viewState = GAME_VIEWS.PLAY;

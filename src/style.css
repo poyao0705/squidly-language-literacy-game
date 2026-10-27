@@ -585,7 +585,6 @@ grid-layout {
 	justify-self: end;
 	gap: clamp(0.7rem, 1.5vw, 1rem);
 	padding: clamp(0.35rem, 0.8vw, 0.6rem) clamp(0.5rem, 1vw, 0.8rem);
-	border-left: 0.22rem solid var(--accent-dark);
 	text-align: right;
 }
 
