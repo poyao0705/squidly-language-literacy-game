@@ -171,7 +171,7 @@ grid-layout {
 .unit-menu-header {
 	min-height: 0;
 	display: grid;
-	align-content: center;
+	align-content: space-between;
 	justify-items: end;
 	gap: min(0.35rem, 0.5vh);
 	padding-inline: clamp(0.35rem, 1vw, 0.75rem);
