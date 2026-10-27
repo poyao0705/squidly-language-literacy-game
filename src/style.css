@@ -155,12 +155,13 @@ grid-layout {
 
 /* Unit menu --------------------------------------------------------------- */
 
-.unit-menu-shell {
+.game-shell.unit-menu-shell {
+	padding: var(--gap, 5px);
 	background: linear-gradient(180deg, #fff 0%, #fff 70%, #f4fbff 100%);
 }
 
 .unit-menu-layout {
-	width: min(100%, 1180px);
+	width: 100%;
 	height: 100%;
 	place-self: center;
 	align-items: stretch;
@@ -168,10 +169,11 @@ grid-layout {
 }
 
 .unit-menu-header {
+	min-height: 0;
 	display: grid;
 	align-content: center;
 	justify-items: end;
-	gap: 0.35rem;
+	gap: min(0.35rem, 0.5vh);
 	padding-inline: clamp(0.35rem, 1vw, 0.75rem);
 	text-align: right;
 }
@@ -180,7 +182,7 @@ grid-layout {
 	position: relative;
 	padding-right: clamp(2.8rem, 5vw, 3.6rem);
 	color: var(--text);
-	font-size: clamp(0.76rem, 1.3vw, 0.92rem);
+	font-size: clamp(0.7rem, min(1.3vw, 2.2vh), 0.92rem);
 	font-weight: 900;
 	letter-spacing: 0.22em;
 	text-transform: uppercase;
@@ -201,14 +203,15 @@ grid-layout {
 .unit-menu-title {
 	max-width: 12ch;
 	color: var(--text-h);
-	font-size: clamp(2.35rem, 5.8vw, 4.75rem);
+	font-size: clamp(1.5rem, min(5.8vw, 8vh), 4.75rem);
 	line-height: 0.98;
 }
 
 .unit-menu-subtitle {
 	color: var(--text);
-	font-size: clamp(1rem, 1.8vw, 1.2rem);
+	font-size: clamp(0.8rem, min(1.8vw, 2.6vh), 1.2rem);
 	font-weight: 800;
+	line-height: 1.2;
 }
 
 .unit-menu-card-row {

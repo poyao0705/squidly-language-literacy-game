@@ -333,7 +333,7 @@ export class LanguageLiteracyGame {
 		layout.styles = {
 			"grid-template-rows": `repeat(${rows}, minmax(0, 1fr))`,
 			"grid-template-columns": `repeat(${columns}, minmax(0, 1fr))`,
-			gap: "clamp(0.5rem, 1.4vw, 0.9rem)",
+			gap: "var(--gap, 5px)",
 		};
 
 		const header = createElement("header", "unit-menu-header");
@@ -350,7 +350,7 @@ export class LanguageLiteracyGame {
 				"Choose a unit to start practicing words.",
 			),
 		);
-		layout.add(header, 0, 0, 0, 4);
+		layout.add(header, 0, 1, 0, 4);
 
 		if (units.length === 0) {
 			layout.add(

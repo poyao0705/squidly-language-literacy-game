@@ -151,6 +151,41 @@
 				await settle();
 			}
 
+			for (const gap of [null, "9px"]) {
+				await check(`unit-menu heading matches Squidly Exit geometry (${gap ?? "standalone"})`, async () => {
+					const root = document.createElement("div");
+					root.style.cssText = "position: relative; width: 100vw;";
+					if (gap) root.style.setProperty("--gap", gap);
+					testRoots.add(root);
+					document.querySelector("#test-games").append(root);
+					const app = new LanguageLiteracyGame(root);
+					const menu = app.createUnitMenu(questionBank, []);
+					root.append(menu);
+
+					// Match AppsFrame's independent 4-by-5 overlay, not the app's grid.
+					const overlay = document.createElement("div");
+					overlay.style.cssText = `position: absolute; inset: ${gap ?? "5px"}; display: grid; grid-template: repeat(4, 1fr) / repeat(5, 1fr); gap: ${gap ?? "5px"};`;
+					const exit = document.createElement("div");
+					overlay.append(exit);
+					root.append(overlay);
+					const header = root.querySelector(".unit-menu-header");
+					const headerRect = header.getBoundingClientRect();
+					const exitRect = exit.getBoundingClientRect();
+					assert(Math.abs(headerRect.top - exitRect.top) < 1, "heading and Exit have the same top edge");
+					assert(Math.abs(headerRect.height - exitRect.height) < 1, "heading and Exit have the same height");
+					assert(headerRect.left >= exitRect.right, "heading leaves Exit's cell clear");
+					assert(header.children.length === 3, "all three heading lines remain");
+					const firstLine = header.firstElementChild.getBoundingClientRect();
+					const lastLine = header.lastElementChild.getBoundingClientRect();
+					assert(Math.abs(firstLine.top - headerRect.top) < 1, "heading starts at the top of its grid row");
+					assert(Math.abs(lastLine.bottom - headerRect.bottom) < 1, "heading fills the full height of its grid row");
+					for (const line of header.children) {
+						const rect = line.getBoundingClientRect();
+						assert(rect.top >= headerRect.top - 1 && rect.bottom <= headerRect.bottom + 1, "heading text stays inside the first grid row");
+					}
+				});
+			}
+
 			await check("prompt has no left accent and helper instructions are absent", async () => {
 				const game = await mount(1);
 				const title = game.root.querySelector(".game-title-block");
