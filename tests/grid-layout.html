@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Shared screen grid checks</title>
+		<link rel="stylesheet" href="/src/style.css" />
+		<style>
+			body { overflow: auto; padding: 1rem; }
+			#results { font: 1rem/1.5 system-ui, sans-serif; }
+			.pass { color: green; }
+			.fail { color: #b00020; }
+			#host { position: fixed; left: -10000px; top: 0; }
+			#host iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+		</style>
+	</head>
+	<body>
+		<h1>Shared screen grid checks</h1>
+		<ol id="results"></ol>
+		<div id="host"></div>
+		<script type="module">
+			import { LanguageLiteracyGame } from "/src/app.js";
+			import { WordBuildingGame } from "/src/game/word-building.js";
+			import { defaultQuestionBankQuery, queryClient } from "/src/queryClient.js";
+
+			const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+			const bank = {
+				info: { title: "Grid test" },
+				questions: [{ id: "grid-cat", unit: "1", word: "cat", answerParts: ["c", "a", "t"], tiles: ["c", "a", "t", "l", "m", "n"], symbol: { value: "cat", text: true } }],
+			};
+
+			if (new URLSearchParams(location.search).has("frame")) {
+				document.body.style.cssText = "padding: 0; overflow: hidden;";
+				document.body.replaceChildren();
+				// AppsFrame injects grid-icon.css; its grid rule may arrive after app styles.
+				const hostStyles = document.createElement("style");
+				hostStyles.textContent = "grid-layout { display: grid; gap: var(--gap); }";
+				document.head.append(hostStyles);
+				const root = document.createElement("div");
+				root.id = "app";
+				document.body.append(root);
+				queryClient.setDefaultOptions({ queries: { staleTime: Infinity, retry: false } });
+				const originalFetch = window.fetch;
+				let version = 0;
+				let finishLoading = null;
+				let pendingRender = null;
+
+				window.renderScene = async (scene, suppliedGap) => {
+					const current = ++version;
+					if (finishLoading) {
+						finishLoading(new Response(JSON.stringify(bank)));
+						await pendingRender;
+						finishLoading = null;
+					}
+					window.fetch = originalFetch;
+					queryClient.clear();
+					root.replaceChildren();
+					if (suppliedGap) document.documentElement.style.setProperty("--gap", suppliedGap);
+					else document.documentElement.style.removeProperty("--gap");
+					document.documentElement.style.fontSize = scene.startsWith("long-") ? "24px" : "18px";
+					const data = structuredClone(bank);
+					if (scene.startsWith("long-")) {
+						data.info.title = "A much longer language literacy title that must remain inside its grid cells";
+					}
+					if (scene === "empty-game") data.questions = [];
+					if (scene === "completed-play") data.questions[0].tiles = ["c", "a", "t"];
+					queryClient.setQueryData(defaultQuestionBankQuery.queryKey, data);
+					const app = new LanguageLiteracyGame(root);
+
+					if (["menu", "long-menu", "empty-menu"].includes(scene)) {
+						const units = scene === "empty-menu" ? [] : [1, 2, 3].map((index) => ({ key: String(index), label: `Unit ${index}`, wordCount: 1, words: ["cat"] }));
+						root.append(app.createUnitMenu(data, units));
+					} else if (scene === "app-loading" || scene === "app-error") {
+						root.append(app.createMessage(scene === "app-loading" ? "Loading units…" : "Unable to load units."));
+					} else if (scene === "spelling") {
+						await app.renderSpellingGame(0);
+					} else {
+						if (scene === "game-loading" || scene === "game-error") {
+							queryClient.clear();
+							window.fetch = () => scene === "game-loading"
+								? new Promise((resolve) => { finishLoading = resolve; })
+								: Promise.resolve(new Response("Unavailable", { status: 503 }));
+						}
+						const game = new WordBuildingGame(root, {
+							selectedUnit: "1",
+							canRender: () => current === version,
+							gameState: ["result", "completed-play"].includes(scene) ? {
+								view: scene === "result" ? "result" : "play", questionIndex: 0, startedAt: 1, completedAt: 1001,
+								answers: { "grid-cat": { selectedTileIds: ["grid-cat-tile-0", "grid-cat-tile-1", "grid-cat-tile-2"], attempts: 1, correctAttempts: 1 } },
+							} : null,
+						});
+						pendingRender = game.render();
+						if (scene !== "game-loading") await pendingRender;
+					}
+					await settle();
+					await settle();
+				};
+			} else {
+				const results = document.querySelector("#results");
+				const host = document.querySelector("#host");
+				let passed = 0;
+				let failed = 0;
+				const scenes = ["menu", "empty-menu", "long-menu", "play", "long-play", "completed-play", "result", "app-loading", "app-error", "spelling", "game-loading", "game-error", "empty-game"];
+				const assert = (condition, message) => { if (!condition) throw new Error(message); };
+				const near = (actual, expected, message) => assert(Math.abs(actual - expected) < 1, `${message}: ${actual} versus ${expected}`);
+
+				for (const [width, height, suppliedGap] of [[480, 800, null], [960, 674, null], [1600, 900, "9px"]]) {
+					host.style.width = `${width}px`;
+					host.style.height = `${height}px`;
+					const frame = document.createElement("iframe");
+					const loaded = new Promise((resolve) => frame.addEventListener("load", resolve, { once: true }));
+					frame.src = "/tests/grid-layout.html?frame=1";
+					host.replaceChildren(frame);
+					await loaded;
+					// Independent copy of AppsFrame's overlay contract, in the parent document.
+					const gap = Number.parseFloat(suppliedGap ?? "5px");
+					const overlay = document.createElement("div");
+					overlay.style.cssText = `position: absolute; inset: ${gap}px; display: grid; grid-template: repeat(4, 1fr) / repeat(5, 1fr); gap: ${gap}px; pointer-events: none;`;
+					const cells = Array.from({ length: 20 }, () => overlay.appendChild(document.createElement("div")));
+					host.append(overlay);
+
+					for (const scene of scenes) {
+						const item = document.createElement("li");
+						results.append(item);
+						try {
+							await frame.contentWindow.renderScene(scene, suppliedGap);
+							const doc = frame.contentDocument;
+							const grid = doc.querySelector("main.game-shell > grid-layout");
+							assert(grid, "screen has a root GridLayout");
+							const style = frame.contentWindow.getComputedStyle(grid);
+							const columns = style.gridTemplateColumns.split(" ").map(Number.parseFloat);
+							const rows = style.gridTemplateRows.split(" ").map(Number.parseFloat);
+							assert(columns.length === 5 && rows.length === 4, "root has exactly 4 rows and 5 columns");
+							near(Number.parseFloat(style.columnGap), gap, "column gap matches host");
+							near(Number.parseFloat(style.rowGap), gap, "row gap matches host");
+							const offset = frame.getBoundingClientRect();
+							const gridRect = grid.getBoundingClientRect();
+							near(gridRect.left + offset.left, cells[0].getBoundingClientRect().left, "grid left edge matches host");
+							near(gridRect.top + offset.top, cells[0].getBoundingClientRect().top, "grid top edge matches host");
+							near(gridRect.right + offset.left, cells[19].getBoundingClientRect().right, "grid right edge matches host");
+							near(gridRect.bottom + offset.top, cells[19].getBoundingClientRect().bottom, "grid bottom edge matches host");
+							columns.forEach((size, index) => near(size, cells[index].getBoundingClientRect().width, `column ${index} width`));
+							rows.forEach((size, index) => near(size, cells[index * 5].getBoundingClientRect().height, `row ${index} height`));
+
+							const placements = scene.includes("menu") ? [
+								[".unit-menu-header", 0, 1, 0, 4],
+								[scene === "empty-menu" ? ".empty-message" : ".unit-menu-card-row", 1, scene === "empty-menu" ? 1 : 0, 2, scene === "empty-menu" ? 3 : 4],
+								['[aria-label="Previous"]', 3, 1, 3, 1], [".unit-menu-page-status", 3, 2, 3, 2], ['[aria-label="Next"]', 3, 3, 3, 3],
+							] : ["play", "long-play", "completed-play", "result"].includes(scene) ? [
+								[".game-title-block", 0, 3, 0, 4], [".word-question-section", 1, 0, 2, 4],
+								...["Menu", "Previous", "Clear", scene === "result" ? "Restart" : "Result", "Speak"].map((label, col) => [`[aria-label="${label}"]`, 3, col, 3, col]),
+								...(scene === "result" ? [] : [[".top-word-icon-card", 0, 2, 0, 2]]),
+							] : [[".question-panel", 1, 0, 2, 4], ...(scene === "spelling" ? [[".message-action-button", 3, 2, 3, 2]] : [])];
+							for (const [selector, r0, c0, r1, c1] of placements) {
+								const element = grid.querySelector(selector);
+								assert(element?.parentElement === grid, `${selector} belongs directly to the root grid`);
+								const actual = element.getBoundingClientRect();
+								const first = cells[r0 * 5 + c0].getBoundingClientRect();
+								const last = cells[r1 * 5 + c1].getBoundingClientRect();
+								if (selector === ".unit-menu-page-status") {
+									near((actual.left + actual.right) / 2 + offset.left, (first.left + last.right) / 2, "page status centered in its column");
+									near((actual.top + actual.bottom) / 2 + offset.top, (first.top + last.bottom) / 2, "page status centered in its row");
+									assert(actual.width <= last.right - first.left + 1 && actual.height <= last.bottom - first.top + 1, "page status stays inside its cell");
+									continue;
+								}
+								near(actual.left + offset.left, first.left, `${selector} left`);
+								near(actual.top + offset.top, first.top, `${selector} top`);
+								near(actual.right + offset.left, last.right, `${selector} right`);
+								near(actual.bottom + offset.top, last.bottom, `${selector} bottom`);
+							}
+							for (const button of grid.querySelectorAll(".nav-button")) {
+								const label = button.querySelector(".display-value").getBoundingClientRect();
+								const bounds = button.getBoundingClientRect();
+								assert(label.left >= bounds.left - 1 && label.right <= bounds.right + 1 && label.top >= bounds.top - 1 && label.bottom <= bounds.bottom + 1, "navigation labels fit inside their grid buttons");
+							}
+							for (const header of grid.querySelectorAll(".unit-menu-header, .game-title-block")) {
+								const bounds = header.getBoundingClientRect();
+								for (const child of header.querySelectorAll(".unit-menu-eyebrow, .unit-menu-title, .unit-menu-subtitle, .game-title, .game-meta-row, .word-prompt, .word-feedback")) {
+									const rect = child.getBoundingClientRect();
+									assert(rect.top >= bounds.top - 1 && rect.bottom <= bounds.bottom + 1, "header text and prompt stay inside the header cell");
+								}
+							}
+							for (const element of grid.children) {
+								const position = frame.contentWindow.getComputedStyle(element);
+								assert(!(position.gridRowStart === "1" && position.gridColumnStart === "1"), "Exit's top-left cell stays reserved");
+							}
+							for (const selector of [".unit-menu-card-row", ".word-board", ".letter-bank", ".answer-slots"]) {
+								const group = doc.querySelector(selector);
+								if (!group) continue;
+								assert(group.tagName === "GRID-LAYOUT", `${selector} uses a nested GridLayout`);
+								const bounds = group.getBoundingClientRect();
+								const characters = selector === ".letter-bank" || selector === ".answer-slots";
+								if (characters) {
+									const parent = group.parentElement.getBoundingClientRect();
+									near((bounds.left + bounds.right) / 2, (parent.left + parent.right) / 2, `${selector} is centered`);
+								}
+								for (const child of group.children) {
+									const rect = child.getBoundingClientRect();
+									const position = frame.contentWindow.getComputedStyle(child);
+									assert(position.gridRowStart !== "auto" && position.gridColumnStart !== "auto", `${selector} explicitly places children`);
+									assert(rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 && rect.top >= bounds.top - 1 && rect.bottom <= bounds.bottom + 1, `${selector} children stay inside their group`);
+									const previous = child.previousElementSibling;
+									if (characters && previous && frame.contentWindow.getComputedStyle(previous).gridRowStart === position.gridRowStart) {
+										near(rect.left - previous.getBoundingClientRect().right, gap, `${selector} characters stay together`);
+									}
+								}
+							}
+							passed += 1;
+							item.className = "pass";
+							item.textContent = `PASS ${scene} (${width}×${height}, gap ${gap})`;
+						} catch (error) {
+							failed += 1;
+							item.className = "fail";
+							item.textContent = `FAIL ${scene} (${width}×${height}, gap ${gap}): ${error.message}`;
+						}
+					}
+					frame.remove();
+				}
+				host.remove();
+				const summary = document.createElement("p");
+				summary.id = "summary";
+				summary.textContent = `${passed} checks passed, ${failed} failed.`;
+				summary.className = failed ? "fail" : "pass";
+				results.after(summary);
+			}
+		</script>
+	</body>
+</html>

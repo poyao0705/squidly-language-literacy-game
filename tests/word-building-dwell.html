@@ -51,6 +51,13 @@
 			let passed = 0;
 			let failed = 0;
 			const testRoots = new Set();
+			const asyncErrors = [];
+			for (const type of ["error", "unhandledrejection"]) {
+				window.addEventListener(type, (event) => {
+					asyncErrors.push(event.error?.message ?? event.reason?.message ?? event.message);
+					event.preventDefault();
+				});
+			}
 
 			function assert(condition, message) {
 				if (!condition) throw new Error(message);
@@ -59,9 +66,12 @@
 			function check(name, run) {
 				const item = document.createElement("li");
 				results.append(item);
+				const errorCount = asyncErrors.length;
 				return Promise.resolve()
 					.then(run)
-					.then(() => {
+					.then(async () => {
+						await settle();
+						assert(asyncErrors.length === errorCount, `no uncaught errors: ${asyncErrors.slice(errorCount).join(", ")}`);
 						passed += 1;
 						item.className = "pass";
 						item.textContent = `PASS ${name}`;
@@ -120,12 +130,10 @@
 				};
 			}
 
-			async function withAppCursorAPI(run) {
+			async function withAppAPI(api, run) {
 				const previousApi = globalThis.SquidlyAPI;
-				const listeners = [];
-				globalThis.SquidlyAPI = {
-					addCursorListener: (callback) => listeners.push(callback),
-				};
+				if (api === undefined) delete globalThis.SquidlyAPI;
+				else globalThis.SquidlyAPI = api;
 				const root = document.createElement("div");
 				root.className = "test-game-root";
 				testRoots.add(root);
@@ -134,16 +142,24 @@
 				try {
 					const app = new LanguageLiteracyGame(root);
 					await app.init();
-					await app.init();
-					app.activeScreen = "word-building";
-					app.selectedUnit = "1";
 					await settle();
 					await settle();
-					await run({ app, root, listeners });
+					await run({ app, root });
 				} finally {
 					if (previousApi === undefined) delete globalThis.SquidlyAPI;
 					else globalThis.SquidlyAPI = previousApi;
 				}
+			}
+
+			async function withAppCursorAPI(run) {
+				const listeners = [];
+				await withAppAPI({ addCursorListener: (callback) => listeners.push(callback) }, async ({ app, root }) => {
+					await app.init();
+					app.selectWordBuildingUnit("1");
+					await settle();
+					await settle();
+					await run({ app, root, listeners });
+				});
 			}
 
 			async function activate(element) {
@@ -151,16 +167,38 @@
 				await settle();
 			}
 
-			for (const gap of [null, "9px"]) {
-				await check(`unit-menu heading matches Squidly Exit geometry (${gap ?? "standalone"})`, async () => {
+			function dispatchDrag(element, type, transfer) {
+				const event = new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: transfer });
+				element.dispatchEvent(event);
+				return event;
+			}
+
+			function beginDrag(tile) {
+				assert(tile.draggable, "bank letters support native dragging");
+				const transfer = new DataTransfer();
+				assert(!dispatchDrag(tile, "dragstart", transfer).defaultPrevented, "current connected letter can start dragging");
+				return transfer;
+			}
+
+			for (const [width, gap] of [["100vw", null], ["100vw", "9px"], ["1600px", null], ["1600px", "9px"]]) {
+				await check(`unit-menu shares the host inset and preserves Exit height (${width}, ${gap ?? "standalone"})`, async () => {
 					const root = document.createElement("div");
-					root.style.cssText = "position: relative; width: 100vw;";
+					root.style.cssText = `position: relative; width: ${width};`;
 					if (gap) root.style.setProperty("--gap", gap);
 					testRoots.add(root);
 					document.querySelector("#test-games").append(root);
 					const app = new LanguageLiteracyGame(root);
 					const menu = app.createUnitMenu(questionBank, []);
 					root.append(menu);
+
+					const expectedPadding = Number.parseFloat(gap ?? "5px");
+					const menuStyle = getComputedStyle(menu);
+					assert(Math.abs(Number.parseFloat(menuStyle.paddingLeft) - expectedPadding) < 1, "left inset matches the host");
+					assert(Math.abs(Number.parseFloat(menuStyle.paddingRight) - expectedPadding) < 1, "right inset matches the host");
+					const menuRect = menu.getBoundingClientRect();
+					const layoutRect = root.querySelector(".unit-menu-layout").getBoundingClientRect();
+					assert(Math.abs(layoutRect.width - (root.clientWidth - 2 * expectedPadding)) < 1, "menu spans the same frame width as Exit's grid");
+					assert(Math.abs(layoutRect.left + layoutRect.right - menuRect.left - menuRect.right) < 1, "menu stays centered inside the host inset");
 
 					// Match AppsFrame's independent 4-by-5 overlay, not the app's grid.
 					const overlay = document.createElement("div");
@@ -440,6 +478,233 @@
 					assert(preview.hidden, "invalid local coordinates hide the preview");
 					assert(window.XPos === undefined && window.YPos === undefined, "cursor movement does not depend on host globals");
 				});
+			});
+
+			for (const api of [undefined, null, {}]) {
+				await check(`standalone navigation and placement work with ${api === null ? "null" : typeof api} API`, async () => {
+					await withAppAPI(api, async ({ app, root }) => {
+						assert(root.querySelector(".unit-card"), "local menu renders");
+						app.selectWordBuildingUnit("1");
+						await settle();
+						await settle();
+						await activate(root.querySelector(".letter-tile"));
+						await activate(root.querySelector(".answer-slot"));
+						assert(app.wordBuildingProgress?.answers["unit-1-cat"]?.selectedTileIds[0] === "unit-1-cat-tile-0", "progress is kept locally");
+						app.goToUnitMenu();
+						await settle();
+						assert(root.querySelector(".unit-card"), "navigation back to menu works");
+					});
+				});
+			}
+
+			await check("read-only Firebase API can normalize screen without firebaseSet", async () => {
+				await withAppAPI({
+					firebaseOnValue(key, callback) {
+						if (key === "state") callback(null);
+					},
+				}, async ({ root }) => {
+					assert(root.querySelector(".unit-card"), "missing write support does not block startup");
+				});
+			});
+
+			for (const failure of ["throw", "reject", "pending"]) {
+				await check(`${failure} Squidly methods cannot block local gameplay`, async () => {
+					const unavailable = () => {
+						if (failure === "pending") return new Promise(() => {});
+						if (failure === "reject") return Promise.reject(new Error("SDK unavailable"));
+						throw new Error("SDK unavailable");
+					};
+					await withAppAPI({
+						addCursorListener: unavailable,
+						firebaseOnValue: unavailable,
+						firebaseSet: unavailable,
+						loadUtterances: unavailable,
+					}, async ({ app, root }) => {
+						assert(root.querySelector(".unit-card"), "local menu renders independently");
+						app.selectWordBuildingUnit("1");
+						await settle();
+						await settle();
+						assert(root.querySelector(".letter-tile"), "preloading failure does not prevent rendering");
+						await activate(root.querySelector(".letter-tile"));
+						await activate(root.querySelector(".answer-slot"));
+						assert(app.wordBuildingProgress?.answers["unit-1-cat"]?.selectedTileIds[0] === "unit-1-cat-tile-0", "failed writes do not prevent placement");
+						const tile = root.querySelector(".letter-tile");
+						const transfer = beginDrag(tile);
+						dispatchDrag(root.querySelectorAll(".answer-slot")[2], "drop", transfer);
+						dispatchDrag(tile, "dragend", transfer);
+						await settle();
+						assert(app.wordBuildingProgress?.answers["unit-1-cat"]?.selectedTileIds[2] === "unit-1-cat-tile-1", "native placement also survives failed SDK calls");
+						app.goToUnitMenu();
+						await settle();
+						assert(root.querySelector(".unit-card"), "failed writes do not prevent navigation");
+					});
+				});
+			}
+
+			await check("working Firebase integration still receives and publishes progress", async () => {
+				const subscriptions = new Map();
+				const writes = [];
+				await withAppAPI({
+					firebaseOnValue: (key, callback) => subscriptions.set(key, callback),
+					firebaseSet: (key, value) => writes.push([key, value]),
+				}, async ({ app, root }) => {
+					app.selectWordBuildingUnit("1");
+					await settle();
+					await settle();
+					await activate(root.querySelector(".letter-tile"));
+					await activate(root.querySelector(".answer-slot"));
+					const saved = writes.filter(([key]) => key === "wordBuildingState").at(-1)?.[1];
+					assert(JSON.parse(saved)?.answers["unit-1-cat"]?.selectedTileIds[0] === "unit-1-cat-tile-0", "placement publishes the existing JSON format");
+					subscriptions.get("wordBuildingState")(JSON.stringify({
+						...app.wordBuildingProgress,
+						answers: { "unit-1-cat": { selectedTileIds: [null, "unit-1-cat-tile-1", null] } },
+					}));
+					await settle();
+					await settle();
+					assert(root.querySelectorAll(".answer-slot")[1].textContent === "a", "remote progress still renders");
+					subscriptions.get("state")("menu");
+					await settle();
+					assert(root.querySelector(".unit-card"), "remote screen updates still render");
+				});
+			});
+
+			for (const speech of ["missing", "throw", "reject", "working", "unsupported", "browser-failure"]) {
+				await check(`${speech} Squidly speech uses the appropriate speech provider`, async () => {
+					const descriptors = ["speechSynthesis", "SpeechSynthesisUtterance"].map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]);
+					const spoken = [];
+					const sdkSpoken = [];
+					Object.defineProperty(globalThis, "speechSynthesis", { configurable: true, value: speech === "unsupported" ? undefined : {
+						cancel() {},
+						speak(utterance) {
+							if (speech === "browser-failure") throw new Error("Browser speech unavailable");
+							spoken.push(utterance.text);
+						},
+					} });
+					Object.defineProperty(globalThis, "SpeechSynthesisUtterance", { configurable: true, value: class { constructor(text) { this.text = text; } } });
+					try {
+						await withAppAPI(["missing", "unsupported", "browser-failure"].includes(speech) ? undefined : {
+							loadUtterances() { throw new Error("Preload unavailable"); },
+							speak(text) {
+								if (speech === "throw") throw new Error("Speech unavailable");
+								if (speech === "reject") return Promise.reject(new Error("Speech unavailable"));
+								sdkSpoken.push(text);
+							},
+						}, async () => {
+							const game = await mount(1, { "unit-1-cat": { selectedTileIds: ["unit-1-cat-tile-0", "unit-1-cat-tile-1", "unit-1-cat-tile-2"] } });
+							await activate(game.root.querySelector('[aria-label="Speak"]'));
+							assert(JSON.stringify(spoken) === JSON.stringify(["missing", "throw", "reject"].includes(speech) ? ["cat"] : []), "browser speech is used only when SDK speech is unavailable and browser speech works");
+							assert(game.root.querySelector(".word-board"), "unavailable speech does not disrupt the game");
+							assert(JSON.stringify(sdkSpoken) === JSON.stringify(speech === "working" ? ["cat"] : []), "working SDK speech remains in use even if preloading fails");
+						});
+					} finally {
+						for (const [key, descriptor] of descriptors) {
+							if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+							else delete globalThis[key];
+						}
+					}
+				});
+			}
+
+			await check("native drop places in the exact slot without SquidlyAPI", async () => {
+				await withAppAPI(undefined, async ({ app, root }) => {
+					app.selectWordBuildingUnit("1");
+					await settle();
+					await settle();
+					const tile = root.querySelector(".letter-tile");
+					const slot = root.querySelectorAll(".answer-slot")[2];
+					const transfer = beginDrag(tile);
+					assert(dispatchDrag(slot, "dragover", transfer).defaultPrevented, "empty slot accepts native dragging");
+					dispatchDrag(slot, "drop", transfer);
+					dispatchDrag(slot, "drop", transfer);
+					await slot.accessClick("dwell");
+					dispatchDrag(tile, "dragend", transfer);
+					await settle();
+					const answer = app.wordBuildingProgress?.answers["unit-1-cat"];
+					assert(JSON.stringify(answer?.selectedTileIds) === JSON.stringify([null, null, "unit-1-cat-tile-0"]), "native drop saves the target slot once");
+					assert(answer.attempts === 0, "partial drops do not count attempts");
+					assert(!root.querySelector(".carried-letter-preview"), "successful drop clears the carry");
+					assert(globalThis.SquidlyAPI === undefined, "native dragging never creates or requires an SDK");
+				});
+			});
+
+			await check("native drops reject external, occupied and forged payloads", async () => {
+				const game = await mount(1, { "unit-1-cat": { selectedTileIds: ["unit-1-cat-tile-0", null, null] } });
+				const tile = game.tiles()[0];
+				assert(dispatchDrag(tile, "dragstart", null).defaultPrevented, "a drag without a data transfer cannot start");
+				const external = new DataTransfer();
+				external.setData("text/plain", "unit-1-cat-tile-1");
+				assert(!dispatchDrag(game.slots()[1], "dragover", external).defaultPrevented, "external drag is not accepted");
+				dispatchDrag(game.slots()[1], "drop", external);
+				await activate(tile);
+				dispatchDrag(game.slots()[1], "drop", external);
+				assert(game.progress.length === 0, "external drop cannot place even a click-carried letter");
+				const transfer = beginDrag(tile);
+				assert(!dispatchDrag(game.slots()[0], "dragover", transfer).defaultPrevented, "occupied slot is not accepted");
+				dispatchDrag(game.slots()[0], "drop", transfer);
+				for (const payload of ["missing", "unit-1-cat-tile-2"]) {
+					transfer.setData("text/plain", payload);
+					dispatchDrag(game.slots()[1], "drop", transfer);
+				}
+				assert(game.progress.length === 0, "invalid drops do not mutate progress");
+				dispatchDrag(tile, "dragend", transfer);
+				assert(!tile.hasAttribute("selected") && !game.root.querySelector(".carried-letter-preview"), "rejected drag cleans up on dragend");
+			});
+
+			await check("native carry hides only its preview and leaves legacy interaction usable", async () => {
+				const game = await mount(1, {}, { getCursorSample: () => ({ source: "local", x: 31, y: 52 }) });
+				const tile = game.tiles()[0];
+				await activate(tile);
+				assert(!game.root.querySelector(".carried-letter-preview").hidden, "legacy Squidly preview is initially visible");
+				const transfer = beginDrag(tile);
+				await nextFrame();
+				assert(game.root.querySelector(".carried-letter-preview").hidden, "native dragging uses only the browser's drag image");
+				await activate(game.tiles()[1]);
+				await activate(game.slots()[0]);
+				assert(game.progress.length === 0 && tile.hasAttribute("selected"), "dwell cannot replace or place an active native carry");
+				dispatchDrag(tile, "dragend", transfer);
+				await activate(game.tiles()[1]);
+				assert(!game.root.querySelector(".carried-letter-preview").hidden, "legacy preview resumes for the next pickup");
+				game.slots()[1].dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+				await settle();
+				assert(game.progress.at(-1)?.answers["unit-1-cat"]?.selectedTileIds[1] === "unit-1-cat-tile-1", "keyboard placement still works after a native drag");
+			});
+
+			for (const cancel of ["outside", "escape", "clear", "disconnect", "stale"]) {
+				await check(`native ${cancel} cancellation cleans up without saving`, async () => {
+					let current = true;
+					const game = await mount(1, {}, { canRender: () => current });
+					const tile = game.tiles()[0];
+					const slot = game.slots()[0];
+					const transfer = beginDrag(tile);
+					if (cancel === "outside") dispatchDrag(tile, "dragend", transfer);
+					if (cancel === "escape") document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+					if (cancel === "clear") await activate(game.clear());
+					if (cancel === "disconnect") tile.remove();
+					if (cancel === "stale") { current = false; await nextFrame(); }
+					const saved = game.progress.length;
+					dispatchDrag(slot, "drop", transfer);
+					await settle();
+					assert(!game.root.querySelector(".carried-letter-preview") && !tile.hasAttribute("selected"), "cancellation releases preview and selection");
+					assert(game.progress.length === saved && (cancel === "clear" || saved === 0), "canceled drop cannot save progress");
+					if (cancel === "disconnect" || cancel === "stale") assert(dispatchDrag(tile, "dragstart", transfer).defaultPrevented, "invalid source cannot start another drag");
+				});
+			}
+
+			await check("native completion preserves duplicate identities and counts one attempt", async () => {
+				const game = await mount(2);
+				for (const [tileIndex, slotIndex] of [[1, 1], [0, 0], [0, 2]]) {
+					const tile = game.tiles()[tileIndex];
+					const slot = game.slots()[slotIndex];
+					const transfer = beginDrag(tile);
+					dispatchDrag(slot, "drop", transfer);
+					dispatchDrag(slot, "drop", transfer);
+					dispatchDrag(tile, "dragend", transfer);
+					await settle();
+				}
+				const answer = game.progress.at(-1)?.answers["unit-2-llp"];
+				assert(JSON.stringify(answer?.selectedTileIds) === JSON.stringify(["unit-2-llp-tile-0", "unit-2-llp-tile-1", "unit-2-llp-tile-2"]), "duplicate letters retain distinct tile IDs");
+				assert(answer.completed && answer.attempts === 1 && answer.correctAttempts === 1, "completion counts exactly one correct attempt");
+				assert(game.progress.length === 3, "each successful placement saves once");
 			});
 
 			const summary = document.createElement("p");

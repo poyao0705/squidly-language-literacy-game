@@ -1,5 +1,7 @@
 import { WordBuildingGame } from "./game/word-building";
 import { defaultQuestionBankQuery, queryClient } from "./queryClient";
+import { createScreenLayout } from "./screen-layout";
+import { callSquidly } from "./squidly-api";
 import { AccessButton, GridIcon, GridLayout, SvgPlus } from "./squidly-utils";
 
 const FIREBASE_KEYS = {
@@ -124,40 +126,46 @@ export class LanguageLiteracyGame {
 	}
 
 	async init() {
-		const api = globalThis.SquidlyAPI;
+		this.requestRender();
 
-		if (
-			!this.#cursorListenerRegistered &&
-			typeof api?.addCursorListener === "function"
-		) {
-			api.addCursorListener((sample) => {
-				if (sample?.source === "local") this.#cursorSample = sample;
-			});
+		if (!this.#cursorListenerRegistered) {
 			this.#cursorListenerRegistered = true;
+			void callSquidly("addCursorListener", (sample) => {
+				if (sample?.source === "local") this.#cursorSample = sample;
+			}).then((registered) => {
+				if (!registered) this.#cursorListenerRegistered = false;
+			});
 		}
 
-		if (api?.firebaseOnValue) {
-			api.firebaseOnValue(FIREBASE_KEYS.ACTIVE_SCREEN, (value) => {
+		void callSquidly(
+			"firebaseOnValue",
+			FIREBASE_KEYS.ACTIVE_SCREEN,
+			(value) => {
 				const screen = normalizeScreen(value);
-
-				if (!value || value !== screen) {
-					api.firebaseSet(FIREBASE_KEYS.ACTIVE_SCREEN, screen);
-				}
-
 				this.activeScreen = screen;
 				this.requestRender();
-			});
 
-			api.firebaseOnValue(FIREBASE_KEYS.WORD_BUILDING_UNIT, (value) => {
+				if (!value || value !== screen) {
+					void callSquidly("firebaseSet", FIREBASE_KEYS.ACTIVE_SCREEN, screen);
+				}
+			},
+		);
+
+		void callSquidly(
+			"firebaseOnValue",
+			FIREBASE_KEYS.WORD_BUILDING_UNIT,
+			(value) => {
 				this.selectedUnit = value;
-			});
+			},
+		);
 
-			api.firebaseOnValue(FIREBASE_KEYS.WORD_BUILDING_PROGRESS, (value) => {
+		void callSquidly(
+			"firebaseOnValue",
+			FIREBASE_KEYS.WORD_BUILDING_PROGRESS,
+			(value) => {
 				this.wordBuildingProgress = value;
-			});
-		}
-
-		this.requestRender();
+			},
+		);
 	}
 
 	#setWordBuildingProgress(value, shouldRequestRender = true) {
@@ -261,10 +269,8 @@ export class LanguageLiteracyGame {
 	}
 
 	createMessage(message, { actionLabel = null, onAction = null } = {}) {
-		const main = document.createElement("main");
-		main.className = "game-shell";
-
-		const panel = document.createElement("section");
+		const { main, layout } = createScreenLayout();
+		const panel = new SvgPlus("section");
 		panel.className = "question-panel message-panel";
 		panel.append(createElement("p", "empty-message", message));
 
@@ -277,10 +283,10 @@ export class LanguageLiteracyGame {
 				onClick: onAction,
 			});
 			button.textContent = actionLabel;
-			panel.append(button);
+			layout.add(button, 3, 2);
 		}
 
-		main.append(panel);
+		layout.add(panel, [1, 2], [0, 4]);
 		return main;
 	}
 
@@ -310,11 +316,8 @@ export class LanguageLiteracyGame {
 	}
 
 	createUnitMenu(questionBank, units) {
-		const main = document.createElement("main");
-		main.className = "game-shell unit-menu-shell";
-
-		const columns = 5;
-		const rows = 4;
+		const { main, layout } = createScreenLayout("unit-menu-shell");
+		layout.classList.add("unit-menu-layout");
 		const unitsPerPage = 3;
 		const totalPages = Math.max(1, Math.ceil(units.length / unitsPerPage));
 		const currentPage = Math.min(
@@ -327,14 +330,6 @@ export class LanguageLiteracyGame {
 		);
 
 		this.unitMenuPage = currentPage;
-
-		const layout = new GridLayout(rows, columns);
-		layout.classList.add("unit-menu-layout");
-		layout.styles = {
-			"grid-template-rows": `repeat(${rows}, minmax(0, 1fr))`,
-			"grid-template-columns": `repeat(${columns}, minmax(0, 1fr))`,
-			gap: "var(--gap, 5px)",
-		};
 
 		const header = createElement("header", "unit-menu-header");
 		header.append(
@@ -363,11 +358,13 @@ export class LanguageLiteracyGame {
 				[1, 3],
 			);
 		} else {
-			const cardRow = createElement("section", "unit-menu-card-row");
+			const cardRow = new GridLayout(1, 3);
+			cardRow.classList.add("unit-menu-card-row");
+			cardRow.setAttribute("role", "region");
 			cardRow.setAttribute("aria-label", "Units");
 
 			visibleUnits.forEach((unit, index) => {
-				cardRow.append(this.createUnitCard(unit, index));
+				cardRow.add(this.createUnitCard(unit, index), 0, index);
 			});
 
 			layout.add(cardRow, [1, 2], [0, 4]);
@@ -397,7 +394,6 @@ export class LanguageLiteracyGame {
 			3,
 		);
 
-		main.append(layout);
 		return main;
 	}
 
@@ -495,22 +491,18 @@ export class LanguageLiteracyGame {
 		this.#setWordBuildingProgress(null, false);
 		this.activeScreen = SCREENS.WORD_BUILDING;
 
-		if (globalThis.SquidlyAPI?.firebaseSet) {
-			globalThis.SquidlyAPI.firebaseSet(
-				FIREBASE_KEYS.WORD_BUILDING_UNIT,
-				this.selectedUnitKey,
-			);
-			globalThis.SquidlyAPI.firebaseSet(
-				FIREBASE_KEYS.WORD_BUILDING_PROGRESS,
-				"",
-			);
-			globalThis.SquidlyAPI.firebaseSet(
-				FIREBASE_KEYS.ACTIVE_SCREEN,
-				SCREENS.WORD_BUILDING,
-			);
-		}
-
 		this.requestRender();
+		void callSquidly(
+			"firebaseSet",
+			FIREBASE_KEYS.WORD_BUILDING_UNIT,
+			this.selectedUnitKey,
+		);
+		void callSquidly("firebaseSet", FIREBASE_KEYS.WORD_BUILDING_PROGRESS, "");
+		void callSquidly(
+			"firebaseSet",
+			FIREBASE_KEYS.ACTIVE_SCREEN,
+			SCREENS.WORD_BUILDING,
+		);
 	}
 
 	goToUnitMenu() {
@@ -518,19 +510,10 @@ export class LanguageLiteracyGame {
 		this.selectedUnitKey = "";
 		this.#setWordBuildingProgress(null, false);
 
-		if (globalThis.SquidlyAPI?.firebaseSet) {
-			globalThis.SquidlyAPI.firebaseSet(FIREBASE_KEYS.WORD_BUILDING_UNIT, "");
-			globalThis.SquidlyAPI.firebaseSet(
-				FIREBASE_KEYS.WORD_BUILDING_PROGRESS,
-				"",
-			);
-			globalThis.SquidlyAPI.firebaseSet(
-				FIREBASE_KEYS.ACTIVE_SCREEN,
-				SCREENS.MENU,
-			);
-		}
-
 		this.requestRender();
+		void callSquidly("firebaseSet", FIREBASE_KEYS.WORD_BUILDING_UNIT, "");
+		void callSquidly("firebaseSet", FIREBASE_KEYS.WORD_BUILDING_PROGRESS, "");
+		void callSquidly("firebaseSet", FIREBASE_KEYS.ACTIVE_SCREEN, SCREENS.MENU);
 	}
 
 	/** Renders the word-building game and syncs its progress to Firebase. */
@@ -546,12 +529,11 @@ export class LanguageLiteracyGame {
 			onGameStateChange: (progress) => {
 				this.#setWordBuildingProgress(progress, false);
 
-				if (globalThis.SquidlyAPI?.firebaseSet) {
-					globalThis.SquidlyAPI.firebaseSet(
-						FIREBASE_KEYS.WORD_BUILDING_PROGRESS,
-						this.wordBuildingProgressJSON,
-					);
-				}
+				void callSquidly(
+					"firebaseSet",
+					FIREBASE_KEYS.WORD_BUILDING_PROGRESS,
+					this.wordBuildingProgressJSON,
+				);
 			},
 		});
 

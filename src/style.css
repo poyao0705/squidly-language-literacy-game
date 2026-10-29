@@ -76,13 +76,11 @@ code {
 /* App shell --------------------------------------------------------------- */
 
 .game-shell {
-	--page-pad: clamp(0.75rem, 2.2vw, 1.5rem);
-
 	position: relative;
 	height: 100svh;
 	display: grid;
 	place-items: stretch;
-	padding: var(--page-pad);
+	padding: var(--gap, 5px);
 	background: linear-gradient(180deg, #fff 0%, #fff 72%, #f6fbff 100%);
 	overflow: hidden;
 }
@@ -98,11 +96,29 @@ grid-layout {
 	min-height: 0;
 }
 
-.word-builder-layout {
+.game-shell grid-layout {
+	gap: var(--gap, 5px);
+}
+
+.screen-layout {
 	width: 100%;
 	height: 100%;
-	align-items: stretch;
-	justify-items: stretch;
+	place-self: stretch;
+}
+
+.screen-layout > * {
+	min-width: 0;
+	min-height: 0;
+}
+
+.game-shell > .screen-layout > :not(.unit-menu-page-status) {
+	min-width: 0;
+	min-height: 0;
+	width: 100%;
+	height: 100%;
+	max-width: none;
+	max-height: none;
+	place-self: stretch;
 }
 
 .question-panel {
@@ -155,22 +171,14 @@ grid-layout {
 
 /* Unit menu --------------------------------------------------------------- */
 
-.game-shell.unit-menu-shell {
-	padding: var(--gap, 5px);
+.unit-menu-shell {
 	background: linear-gradient(180deg, #fff 0%, #fff 70%, #f4fbff 100%);
-}
-
-.unit-menu-layout {
-	width: 100%;
-	height: 100%;
-	place-self: center;
-	align-items: stretch;
-	justify-items: stretch;
 }
 
 .unit-menu-header {
 	min-height: 0;
 	display: grid;
+	grid-template-rows: auto minmax(0, 1fr) auto;
 	align-content: space-between;
 	justify-items: end;
 	gap: min(0.35rem, 0.5vh);
@@ -201,7 +209,11 @@ grid-layout {
 }
 
 .unit-menu-title {
+	min-height: 0;
 	max-width: 12ch;
+	max-height: 100%;
+	align-self: center;
+	overflow: hidden;
 	color: var(--text-h);
 	font-size: clamp(1.5rem, min(5.8vw, 8vh), 4.75rem);
 	line-height: 0.98;
@@ -217,10 +229,7 @@ grid-layout {
 .unit-menu-card-row {
 	min-width: 0;
 	min-height: 0;
-	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
 	align-items: stretch;
-	gap: clamp(0.75rem, 1.7vw, 1.15rem);
 }
 
 .unit-card {
@@ -389,6 +398,8 @@ grid-layout {
 .unit-menu-page-status {
 	align-self: center;
 	justify-self: center;
+	max-width: 100%;
+	text-align: center;
 	padding: 0.4rem 0.9rem;
 	border: 1px solid var(--panel-border);
 	border-radius: 999px;
@@ -396,7 +407,6 @@ grid-layout {
 	color: var(--text-h);
 	font-size: clamp(0.9rem, 1.7vw, 1.05rem);
 	font-weight: 900;
-	white-space: nowrap;
 	box-shadow: var(--shadow-tile);
 }
 
@@ -554,6 +564,8 @@ grid-layout {
 
 .nav-button .display-value,
 .nav-button .display-value * {
+	max-width: 100%;
+	overflow-wrap: anywhere;
 	color: var(--button-ink) !important;
 	font-family: var(--button-font) !important;
 	font-size: clamp(1rem, 2.2vw, 2rem);
@@ -582,6 +594,7 @@ grid-layout {
 
 .game-title-block {
 	min-width: 0;
+	overflow: hidden;
 	display: flex;
 	align-items: center;
 	align-self: start;
@@ -593,12 +606,17 @@ grid-layout {
 
 .game-title-text {
 	min-width: 0;
+	min-height: 0;
+	height: 100%;
 	flex: 1 1 auto;
 	display: grid;
+	grid-template-rows: minmax(0, 1fr) auto auto;
 	gap: 0.35rem;
 }
 
 .game-title {
+	min-height: 0;
+	overflow: hidden;
 	color: var(--text-h);
 	font-size: clamp(1.25rem, 2.7vw, 1.95rem);
 	line-height: 1.05;
@@ -628,7 +646,7 @@ grid-layout {
 /* Word-building board ----------------------------------------------------- */
 
 .word-board {
-	--puzzle-gap: clamp(0.75rem, 1.8vw, 1.25rem);
+	--puzzle-gap: var(--gap, 5px);
 	--puzzle-tile-size: clamp(5.8rem, min(10vw, 19vh), 9.5rem);
 	--puzzle-slot-size: clamp(5.3rem, min(9.5vw, 18vh), 9rem);
 	--puzzle-letter-font-size: clamp(3.6rem, min(7vw, 12vh), 6.6rem);
@@ -638,8 +656,6 @@ grid-layout {
 	height: 100%;
 	max-width: 100%;
 	min-height: 0;
-	display: grid;
-	grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
 	justify-items: center;
 	align-content: stretch;
 	justify-self: center;
@@ -708,24 +724,42 @@ grid-layout {
 	line-height: 1;
 }
 
-.letter-bank {
-	width: 100%;
+.letter-bank,
+.answer-slots {
 	height: 100%;
-	max-width: 100%;
+	min-width: 0;
 	min-height: 0;
-	display: flex;
-	flex-wrap: wrap;
-	align-content: center;
 	align-items: center;
-	justify-content: center;
-	gap: var(--puzzle-gap);
+	justify-items: center;
+	justify-self: center;
+}
+
+.letter-bank {
+	width: min(
+		100%,
+		calc(
+			var(--cols) *
+			var(--puzzle-tile-size) +
+			(var(--cols) - 1) *
+			var(--puzzle-gap)
+		)
+	);
+}
+
+.answer-slots {
+	width: min(
+		100%,
+		calc(
+			var(--cols) *
+			var(--puzzle-slot-size) +
+			(var(--cols) - 1) *
+			var(--puzzle-gap)
+		)
+	);
 }
 
 .letter-tile.game-button.grid-icon {
-	width: min(
-		var(--puzzle-tile-size),
-		calc((100% - var(--puzzle-gap) - var(--puzzle-gap)) / 3)
-	);
+	width: min(var(--puzzle-tile-size), 100%);
 	height: min(var(--puzzle-tile-size), 100%);
 	aspect-ratio: 1 / 1;
 	flex: 0 0 auto;
@@ -748,27 +782,11 @@ grid-layout {
 	line-height: 1;
 }
 
-.answer-slots {
-	width: 100%;
-	height: 100%;
-	max-width: 100%;
-	min-height: 0;
-	display: flex;
-	flex-wrap: wrap;
-	align-content: center;
-	align-items: center;
-	justify-content: center;
-	gap: var(--puzzle-gap);
-}
-
 .answer-slot {
-	width: min(
-		var(--puzzle-slot-size),
-		calc((100% - var(--puzzle-gap) - var(--puzzle-gap)) / 3)
-	);
+	width: min(var(--puzzle-slot-size), 100%);
 	height: min(var(--puzzle-slot-size), 100%);
 	aspect-ratio: 1 / 1;
-	flex: 0 0 auto;
+	place-self: center;
 	display: grid;
 	place-items: center;
 	border: 0;
@@ -917,20 +935,6 @@ grid-layout {
 }
 
 @media (max-width: 640px) {
-	.game-shell {
-		--page-pad: 0.5rem;
-
-		padding: var(--page-pad);
-	}
-
-	.word-builder-layout {
-		height: 100%;
-	}
-
-	.question-panel {
-		height: 100%;
-	}
-
 	.word-question-section {
 		grid-template-columns: 1fr;
 		padding: 0.75rem;
@@ -944,15 +948,6 @@ grid-layout {
 
 	.word-feedback {
 		padding-top: 0;
-	}
-
-	.letter-tile {
-		width: clamp(3.6rem, 22vw, 5rem);
-		height: clamp(3.8rem, 23vw, 5.2rem);
-	}
-
-	.answer-slots {
-		gap: 0.6rem;
 	}
 
 	.nav-button .content {

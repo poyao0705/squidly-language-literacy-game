@@ -1,5 +1,7 @@
 import { deferReplaceChildren } from "../dom-utils";
 import { defaultQuestionBankQuery, queryClient } from "../queryClient";
+import { createScreenLayout } from "../screen-layout";
+import { callSquidly } from "../squidly-api";
 import {
 	AccessButton,
 	GridIcon,
@@ -342,14 +344,10 @@ export class WordBuildingGame {
 	}
 
 	#createShell() {
-		const main = document.createElement("main");
-		main.className = "game-shell word-building-shell";
-
-		const panel = document.createElement("section");
+		const { main, layout } = createScreenLayout("word-building-shell");
+		const panel = new SvgPlus("section");
 		panel.className = "question-panel word-builder-panel";
-
-		main.append(panel);
-
+		layout.add(panel, [1, 2], [0, 4]);
 		return { main, panel };
 	}
 
@@ -582,21 +580,13 @@ export class WordBuildingGame {
 		const state = this.#getQuestionState(question);
 		this.#preloadUtterance(question);
 
-		const main = document.createElement("main");
-		main.className = "game-shell word-building-shell";
-		main.append(this.#createGameLayout(question, state));
-
+		const { main, layout } = createScreenLayout("word-building-shell");
+		this.#createGameLayout(question, state, layout);
 		this.#replaceRoot(main);
 	}
 
-	#createGameLayout(question, state) {
-		const layout = new GridLayout(4, 5);
+	#createGameLayout(question, state, layout) {
 		layout.classList.add("word-builder-layout");
-		layout.styles = {
-			"grid-template-rows": "repeat(4, minmax(0, 1fr))",
-			"grid-template-columns": "repeat(5, minmax(0, 1fr))",
-			gap: "clamp(0.5rem, 1.4vw, 0.9rem)",
-		};
 
 		const titleBlock = this.#createTitleBlock(question, state);
 		layout.add(titleBlock, 0, [3, 4]);
@@ -620,21 +610,14 @@ export class WordBuildingGame {
 
 	#renderResult() {
 		this.#cancelCarry();
-		const main = document.createElement("main");
-		main.className = "game-shell word-building-shell";
-		main.append(this.#createResultLayout());
+		const { main, layout } = createScreenLayout("word-building-shell");
+		this.#createResultLayout(layout);
 		this.#replaceRoot(main);
 	}
 
-	#createResultLayout() {
-		const layout = new GridLayout(4, 5);
+	#createResultLayout(layout) {
 		const summary = this.#getResultSummary();
 		layout.classList.add("word-builder-layout");
-		layout.styles = {
-			"grid-template-rows": "repeat(4, minmax(0, 1fr))",
-			"grid-template-columns": "repeat(5, minmax(0, 1fr))",
-			gap: "clamp(0.5rem, 1.4vw, 0.9rem)",
-		};
 
 		layout.add(this.#createResultTitleBlock(summary), 0, [3, 4]);
 		layout.add(this.#createResultSection(summary), [1, 2], [0, 4]);
@@ -811,13 +794,12 @@ export class WordBuildingGame {
 	}
 
 	#createBoard(question, state) {
-		const board = createElement("section", "word-board");
+		const board = new GridLayout(2, 1);
+		board.classList.add("word-board");
+		board.setAttribute("role", "region");
 		board.setAttribute("aria-labelledby", "word-builder-prompt");
-
-		const letterBank = this.#createLetterBank(question, state);
-		const slots = this.#createAnswerSlots(question, state);
-
-		board.append(letterBank, slots);
+		board.add(this.#createLetterBank(question, state), 0, 0);
+		board.add(this.#createAnswerSlots(question, state), 1, 0);
 		return board;
 	}
 
@@ -866,7 +848,14 @@ export class WordBuildingGame {
 	}
 
 	#createLetterBank(question, state) {
-		const letterBank = createElement("div", "letter-bank");
+		const availableCount = question.tiles.filter(
+			(tile) => !state.selectedTileIds.includes(tile.id),
+		).length;
+		const letterBank = new GridLayout(
+			Math.max(1, Math.ceil(availableCount / 3)),
+			Math.max(1, Math.min(3, availableCount)),
+		);
+		letterBank.classList.add("letter-bank");
 
 		question.tiles.forEach((tile, index) => {
 			if (state.selectedTileIds.includes(tile.id)) return;
@@ -884,14 +873,43 @@ export class WordBuildingGame {
 				`Pick up ${tile.value}, choice ${index + 1}`,
 			);
 			tileButton.selected = false;
-			letterBank.append(tileButton);
+			tileButton.draggable = true;
+			tileButton.addEventListener("dragstart", (event) => {
+				if (!event.dataTransfer) {
+					event.preventDefault();
+					return;
+				}
+
+				this.#pickUpTile(question, tile.id, tileButton);
+				const carriedTile = this.#carriedTile;
+				if (carriedTile?.sourceButton !== tileButton) {
+					event.preventDefault();
+					return;
+				}
+
+				carriedTile.nativeDrag = true;
+				carriedTile.preview.hidden = true;
+				event.dataTransfer.effectAllowed = "move";
+				event.dataTransfer.setData("text/plain", tile.id);
+			});
+			tileButton.addEventListener("dragend", () => {
+				if (
+					this.#carriedTile?.nativeDrag &&
+					this.#carriedTile.sourceButton === tileButton
+				) {
+					this.#cancelCarry();
+				}
+			});
+			const position = letterBank.children.length;
+			letterBank.add(tileButton, Math.floor(position / 3), position % 3);
 		});
 
 		return letterBank;
 	}
 
 	#createAnswerSlots(question, state) {
-		const slots = createElement("div", "answer-slots");
+		const slots = new GridLayout(1, Math.max(1, question.answerParts.length));
+		slots.classList.add("answer-slots");
 
 		for (let index = 0; index < question.answerParts.length; index += 1) {
 			let placedInThisSlot = false;
@@ -899,7 +917,7 @@ export class WordBuildingGame {
 			const selectedTile = question.tiles.find(
 				(tile) => tile.id === selectedTileId,
 			);
-			const slot = document.createElement("access-button");
+			const slot = new SvgPlus("access-button");
 			slot.className = "answer-slot";
 			slot.setAttribute("access-group", "word-building-slots");
 			slot.setAttribute("access-order", String(index));
@@ -924,6 +942,7 @@ export class WordBuildingGame {
 			slot.addEventListener("access-click", () => {
 				if (
 					placedInThisSlot ||
+					this.#carriedTile?.nativeDrag ||
 					!slot.isConnected ||
 					!this.#canInteractWithQuestion(question)
 				)
@@ -945,7 +964,33 @@ export class WordBuildingGame {
 				slot.click();
 			});
 
-			slots.append(slot);
+			const canDrop = () => {
+				const carriedTile = this.#carriedTile;
+				return (
+					!placedInThisSlot &&
+					carriedTile?.nativeDrag === true &&
+					carriedTile.question === question &&
+					slot.isConnected &&
+					this.#canInteractWithQuestion(question) &&
+					this.#getQuestionState(question).selectedTileIds[index] === null
+				);
+			};
+			slot.addEventListener("dragover", (event) => {
+				if (!canDrop() || !event.dataTransfer) return;
+				event.preventDefault();
+				event.dataTransfer.dropEffect = "move";
+			});
+			slot.addEventListener("drop", (event) => {
+				if (!canDrop()) return;
+				event.preventDefault();
+				if (
+					event.dataTransfer?.getData("text/plain") !== this.#carriedTile.tileId
+				)
+					return;
+				placedInThisSlot = this.#placeCarriedTile(question, index, slot);
+			});
+
+			slots.add(slot, 0, index);
 		}
 
 		return slots;
@@ -1042,7 +1087,11 @@ export class WordBuildingGame {
 			return;
 		if (this.#getQuestionState(question).selectedTileIds.includes(tileId))
 			return;
-		if (this.#carriedTile?.sourceButton === sourceButton) return;
+		if (
+			this.#carriedTile?.nativeDrag ||
+			this.#carriedTile?.sourceButton === sourceButton
+		)
+			return;
 
 		this.#cancelCarry();
 		const tile = question.tiles.find((candidate) => candidate.id === tileId);
@@ -1065,6 +1114,7 @@ export class WordBuildingGame {
 			tileId,
 			sourceButton,
 			preview,
+			nativeDrag: false,
 			frameId: null,
 			previousOnDisconnect: sourceButton.ondisconnect,
 			onDisconnect: null,
@@ -1102,7 +1152,8 @@ export class WordBuildingGame {
 			return;
 		}
 
-		const position = this.#getCursorSample();
+		// Native drags use the browser's image; keep frames running for stale-view cleanup.
+		const position = carriedTile.nativeDrag ? null : this.#getCursorSample();
 		if (
 			position?.source === "local" &&
 			Number.isFinite(position.x) &&
@@ -1266,9 +1317,9 @@ export class WordBuildingGame {
 	}
 
 	#preloadUtterance(question) {
-		const api = globalThis.SquidlyAPI;
-		if (!question.utterance || !api?.loadUtterances) return;
-		api.loadUtterances([question.utterance]);
+		if (question.utterance) {
+			void callSquidly("loadUtterances", [question.utterance]);
+		}
 	}
 
 	#getSelectedWord(question, state) {
@@ -1290,23 +1341,27 @@ export class WordBuildingGame {
 		this.#speakText(this.#getSelectedWord(question, state), true);
 	}
 
-	#speakText(text, loadFirst = false) {
+	async #speakText(text, loadFirst = false) {
 		if (!text) return;
 
-		const api = globalThis.SquidlyAPI;
-		if (api?.speak) {
-			if (loadFirst && api.loadUtterances) {
-				api.loadUtterances([text]);
-			}
-			api.speak(text);
-			return;
-		}
+		if (loadFirst) void callSquidly("loadUtterances", [text]);
+		if (await callSquidly("speak", text)) return;
 
-		if (globalThis.speechSynthesis && globalThis.SpeechSynthesisUtterance) {
-			globalThis.speechSynthesis.cancel();
-			globalThis.speechSynthesis.speak(
-				new globalThis.SpeechSynthesisUtterance(text),
-			);
+		if (
+			globalThis.speechSynthesis &&
+			typeof globalThis.SpeechSynthesisUtterance === "function"
+		) {
+			try {
+				globalThis.speechSynthesis.cancel();
+				globalThis.speechSynthesis.speak(
+					new globalThis.SpeechSynthesisUtterance(text),
+				);
+			} catch (error) {
+				console.warn(
+					"Browser speech unavailable; continuing without audio.",
+					error,
+				);
+			}
 		}
 	}
 
